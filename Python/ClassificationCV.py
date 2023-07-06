@@ -16,7 +16,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix
 import matplotlib.pyplot as plt
 
 dataPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Data"
-expirementPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage"
+expirementPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage_discretizeFixedWidth=5_normalizePixelSpacing"
 
 # Load feature data
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
@@ -43,14 +43,14 @@ n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 99]
 
 ####
 
-erosionCheck = pd.read_csv(r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\erosionRobustFeatures.csv")
-includeFeatures = erosionCheck[erosionCheck["pearson"] > 0.5]["feature"]
-excludeFeatures = erosionCheck[erosionCheck["pearson"] < 0.5]["feature"]
-X = X[X.columns.intersection(includeFeatures)]
-n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 83]
+# erosionCheck = pd.read_csv(r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\erosionRobustFeatures.csv")
+# includeFeatures = erosionCheck[erosionCheck["pearson"] > 0.5]["feature"]
+# excludeFeatures = erosionCheck[erosionCheck["pearson"] < 0.5]["feature"]
+# X = X[X.columns.intersection(includeFeatures)]
+# n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 83]
 
-print(includeFeatures)
-print(excludeFeatures)
+# print(includeFeatures)
+# print(excludeFeatures)
 
 ####
 
@@ -96,7 +96,7 @@ getModelMetrics(LinearDiscriminantAnalysis(), n_features)
 # getModelMetrics(RandomForestClassifier(), n_features)
 
 # Save to file
-with pd.ExcelWriter(os.path.join(expirementPath, "results_erosionCheck.xlsx")) as writer:
+with pd.ExcelWriter(os.path.join(expirementPath, "results.xlsx")) as writer:
     for metric in ["accuracy", "auc", "sensitivity", "specificity"]:
         df = pd.DataFrame(columns = n_features)
         

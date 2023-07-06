@@ -45,6 +45,8 @@ def resampleToSpacing (image, mask, spacing):
 def preprocess (image, mask, 
                 pixel_spacing,
                 discretize,
+                n_bins,
+                bin_width,
                 preprocessing_filter,
                 LoG_sigma,
                 mask_opening):
@@ -59,11 +61,31 @@ def preprocess (image, mask,
         image, mask = resampleToSpacing(image, mask, pixel_spacing)
         
     # Discretize gray levels
-    if discretize == "fixedwidth":
-        binEdges = radiomics.imageoperations.getBinEdges()
+    if discretize:
+        # Get numpy arrays of image
+        parameterMatrix = sitk.GetArrayFromImage(image)
+        parameterMatrixCoordinates = np.nonzero(sitk.GetArrayFromImage(mask))
         
-    elif discretize == "fixedcount":
+        # Discretize gray levels
+        if discretize == "fixedwidth":
+            discretizedImage = radiomics.imageoperations.binImage(parameterMatrix,
+                                                                  parameterMatrixCoordinates,
+                                                                  binWidth = bin_width
+                                                                  )[0]
+            
+        elif discretize == "fixedcount":
+            discretizedImage = radiomics.imageoperations.binImage(parameterMatrix,
+                                                                  parameterMatrixCoordinates,
+                                                                  binCount = n_bins
+                                                                  )[0]
     
+        # Convert back to SimpleITK image, and match geometry
+        discretizedImage = sitk.GetImageFromArray(discretizedImage)
+        discretizedImage.SetDirection(image.GetDirection())
+        discretizedImage.SetSpacing(image.GetSpacing())
+        discretizedImage.SetOrigin(image.GetOrigin())
+        image = discretizedImage
+        
     # Apply preprocessing image filters
     if preprocessing_filter == "LoG":
         image = sitk.LaplacianRecursiveGaussian(image, sigma = LoG_sigma)

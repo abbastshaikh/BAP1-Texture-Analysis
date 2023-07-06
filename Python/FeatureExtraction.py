@@ -40,6 +40,10 @@ parser.add_argument('--pixel_spacing', type=float, default = 0.,
                     help = 'Resample image and mask to standard pixel spacing. Set to 0 to not resample.')
 parser.add_argument('--discretize', type=str, default = "", choices = ["none", "fixedwidth", "fixedcount"],
                     help = 'Discretize gray levels of image (fixedwidth = fixed bin widths, fixedcount = fixed number of bins')
+parser.add_argument('--n_bins', type=int, default = 64,
+                    help = 'Number of bins to discretize gray levels of image')
+parser.add_argument('--bin_width', type=float, default = 25,
+                    help = 'Bin width to discretize gray levels of image')
 
 parser.add_argument('--mask_opening', type=str2bool, default = False,
                     help = 'Apply opening morphological operation to mask')
@@ -106,6 +110,9 @@ for caseIdx in range(len(cases)):
         # Preprocess image and mask via preprocessing pipline
         image, mask = preprocess(image, mask,  
                                  args.pixel_spacing,
+                                 args.discretize,
+                                 args.n_bins,
+                                 args.bin_width,
                                  args.preprocessing_filter,
                                  args.LoG_sigma,
                                  args.mask_opening)
