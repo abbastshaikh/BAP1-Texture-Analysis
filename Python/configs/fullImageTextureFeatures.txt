@@ -1,0 +1,10 @@
+approach = full
+threshold = 0.01
+data_path = C:\Users\mathw\Desktop\MedIX REU\Project\Data\TextureAnalysis
+save_path = C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-Test
+radiomic_features = True
+radiomic_feature_classes = ['firstorder', 'glcm', 'gldm', 'glrlm', 'glszm', 'ngtdm']
+laws_features = True
+pixel_spacing=0.75
+preprocessing_filter = LoG
+LoG_sigma = 2
