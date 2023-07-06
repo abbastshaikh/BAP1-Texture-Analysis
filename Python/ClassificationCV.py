@@ -54,6 +54,8 @@ n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 99]
 
 ####
 
+def confidence_interval
+
 # Note:
 # Low sample size produces large bias in error on test dataset
 # Hence, we perform a Leave-One-Out Cross Validation
