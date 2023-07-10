@@ -8,7 +8,7 @@ diseaseLaterality = pd.read_excel(os.path.join(basePath, "BAP1 data curation.xls
                                     sheet_name = "Disease laterality - Feng")
 
 # Get input and output paths
-imagesPath = "HIRO-cases proper names"
+imagesPath = os.path.join(basePath, "HIRO-cases proper names")
 outFolder = "TextureAnalysis"
 os.mkdir(os.path.join(basePath, outFolder))
 
