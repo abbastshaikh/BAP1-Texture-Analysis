@@ -16,7 +16,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix
 import matplotlib.pyplot as plt
 
 dataPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Data"
-expirementPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage_discretizeFixedWidth=5_normalizePixelSpacing"
+expirementPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage_discretizeFixedCount_normalizePixelSpacing"
 
 # Load feature data
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
@@ -40,22 +40,25 @@ X, y = features.iloc[:,:-1], features.iloc[:,-1]
 all_metrics = {}
 n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 99]
 
+n_features = range(1, 100)
 
 ####
 
 # erosionCheck = pd.read_csv(r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\erosionRobustFeatures.csv")
-# includeFeatures = erosionCheck[erosionCheck["pearson"] > 0.5]["feature"]
-# excludeFeatures = erosionCheck[erosionCheck["pearson"] < 0.5]["feature"]
+# includeFeatures = erosionCheck[erosionCheck["pearson"] > 0.5]
+# excludeFeatures = erosionCheck[erosionCheck["pearson"] < 0.5]
 # X = X[X.columns.intersection(includeFeatures)]
 # n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 83]
 
 # print(includeFeatures)
 # print(excludeFeatures)
 
+import warnings
+warnings.filterwarnings(action='ignore', category=RuntimeWarning)
+warnings.filterwarnings(action='ignore', category=UserWarning)
+
 ####
-
-def confidence_interval
-
+#%%
 # Note:
 # Low sample size produces large bias in error on test dataset
 # Hence, we perform a Leave-One-Out Cross Validation
@@ -67,9 +70,11 @@ def getModelMetrics (model, n_features):
                "specificity": []
                }
     
-    print(model.__class__.__name__)        
+    print(model.__class__.__name__)     
     
     for n in n_features:
+        
+        print(n)
         
         pipeline = Pipeline(steps = [
             ('scaling', MinMaxScaler()),
@@ -93,7 +98,7 @@ def getModelMetrics (model, n_features):
     
 getModelMetrics(SVC(probability = True), n_features)
 getModelMetrics(LogisticRegression(), n_features)
-getModelMetrics(DecisionTreeClassifier(), n_features)
+getModelMetrics(DecisionTreeClassifier(max_depth = 5), n_features)
 getModelMetrics(LinearDiscriminantAnalysis(), n_features)
 # getModelMetrics(RandomForestClassifier(), n_features)
 
@@ -106,3 +111,70 @@ with pd.ExcelWriter(os.path.join(expirementPath, "results.xlsx")) as writer:
             df.loc[model] = all_metrics[model][metric]
         
         df.to_excel(writer, metric)
+#%%
+plt.plot(range(1, 100), all_metrics["SVC"]["accuracy"])
+plt.plot(range(1, 100), all_metrics["SVC"]["auc"])
+plt.title("SVM")
+plt.legend(["Accuracy", "AUC"])
+plt.xlabel("Number of Features")
+plt.show()
+
+plt.plot(range(1, 100), all_metrics["LogisticRegression"]["accuracy"])
+plt.plot(range(1, 100), all_metrics["LogisticRegression"]["auc"])
+plt.title("Logistic Regression")
+plt.legend(["Accuracy", "AUC"])
+plt.xlabel("Number of Features")
+plt.show()
+
+plt.plot(range(1, 100), all_metrics["DecisionTreeClassifier"]["accuracy"])
+plt.plot(range(1, 100), all_metrics["DecisionTreeClassifier"]["auc"])
+plt.title("Decision Tree")
+plt.legend(["Accuracy", "AUC"])
+plt.xlabel("Number of Features")
+plt.show()
+
+plt.plot(range(1, 100), all_metrics["LinearDiscriminantAnalysis"]["accuracy"])
+plt.plot(range(1, 100), all_metrics["LinearDiscriminantAnalysis"]["auc"])
+plt.title("Linear Discriminant Analysis")
+plt.legend(["Accuracy", "AUC"])
+plt.xlabel("Number of Features")
+plt.show()
+
+#%%
+# metrics = {"accuracy": [],
+#            "auc": [],
+#            "sensitivity": [],
+#            "specificity": []
+#            }
+
+# model = DecisionTreeClassifier(max_depth = 5)
+# print(model.__class__.__name__)     
+
+# n = 35
+
+# pipeline = Pipeline(steps = [
+#     ('scaling', MinMaxScaler()),
+#     ('feature_selection', SelectKBest(k = n)),
+#     ('classification', model)
+#     ])
+
+# cv = LeaveOneOut()
+# y_prob = cross_val_predict(pipeline, X, y, cv = cv, method = 'predict_proba')
+# y_pred = np.argmax(y_prob, axis = 1)
+
+# metrics["accuracy"].append(sum(y == y_pred) / len(y))
+# metrics["auc"].append(roc_auc_score(y, y_prob[:, 1]))
+
+# cm = confusion_matrix(y, y_pred)
+
+# metrics["sensitivity"].append(cm[0,0] / (cm[0,0] + cm[0,1]))
+# metrics["specificity"].append(cm[1,1] / (cm[1,0] + cm[1,1]))
+
+# print(metrics)
+
+# fpr, tpr, threshold = roc_curve(y, y_prob[:, 1])
+# plt.plot(fpr, tpr)
+# plt.title("ROC Curve")
+# plt.xlabel("False Positive Rate")
+# plt.ylabel("True Positive Rate")
+# plt.show()
