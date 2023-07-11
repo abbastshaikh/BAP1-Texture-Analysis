@@ -23,6 +23,9 @@ for case in os.listdir(dataPath):
     dicom = pydicom.dcmread(imgPath)
     sliceThickness.append(dicom.SliceThickness)
     
+    print(imgPath)
+    print(dicom.SliceThickness)
+    
 xSpacing = [s[0] for s in spacing]  
 ySpacing = [s[1] for s in spacing]   
 

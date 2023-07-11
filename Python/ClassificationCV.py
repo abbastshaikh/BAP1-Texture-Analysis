@@ -15,8 +15,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix
 import matplotlib.pyplot as plt
 
-dataPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Data"
-expirementPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage_discretizeFixedCount_normalizePixelSpacing"
+dataPath = r"D:\BAP1\Data"
+expirementPath = r"D:\BAP1\Experiments\Python-FullImage_correctedAggregationAndDiscretization"
 
 # Load feature data
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
@@ -38,9 +38,7 @@ features = features[~features.isnull().any(axis=1)].drop("Case", axis = 1)
 X, y = features.iloc[:,:-1], features.iloc[:,-1]
 
 all_metrics = {}
-n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 99]
-
-n_features = range(1, 100)
+n_features = range(1, len(X.columns))
 
 ####
 
@@ -111,30 +109,30 @@ with pd.ExcelWriter(os.path.join(expirementPath, "results.xlsx")) as writer:
             df.loc[model] = all_metrics[model][metric]
         
         df.to_excel(writer, metric)
-#%%
-plt.plot(range(1, 100), all_metrics["SVC"]["accuracy"])
-plt.plot(range(1, 100), all_metrics["SVC"]["auc"])
+
+plt.plot(range(1, len(X.columns)), all_metrics["SVC"]["accuracy"])
+plt.plot(range(1, len(X.columns)), all_metrics["SVC"]["auc"])
 plt.title("SVM")
 plt.legend(["Accuracy", "AUC"])
 plt.xlabel("Number of Features")
 plt.show()
 
-plt.plot(range(1, 100), all_metrics["LogisticRegression"]["accuracy"])
-plt.plot(range(1, 100), all_metrics["LogisticRegression"]["auc"])
+plt.plot(range(1, len(X.columns)), all_metrics["LogisticRegression"]["accuracy"])
+plt.plot(range(1, len(X.columns)), all_metrics["LogisticRegression"]["auc"])
 plt.title("Logistic Regression")
 plt.legend(["Accuracy", "AUC"])
 plt.xlabel("Number of Features")
 plt.show()
 
-plt.plot(range(1, 100), all_metrics["DecisionTreeClassifier"]["accuracy"])
-plt.plot(range(1, 100), all_metrics["DecisionTreeClassifier"]["auc"])
+plt.plot(range(1, len(X.columns)), all_metrics["DecisionTreeClassifier"]["accuracy"])
+plt.plot(range(1, len(X.columns)), all_metrics["DecisionTreeClassifier"]["auc"])
 plt.title("Decision Tree")
 plt.legend(["Accuracy", "AUC"])
 plt.xlabel("Number of Features")
 plt.show()
 
-plt.plot(range(1, 100), all_metrics["LinearDiscriminantAnalysis"]["accuracy"])
-plt.plot(range(1, 100), all_metrics["LinearDiscriminantAnalysis"]["auc"])
+plt.plot(range(1, len(X.columns)), all_metrics["LinearDiscriminantAnalysis"]["accuracy"])
+plt.plot(range(1, len(X.columns)), all_metrics["LinearDiscriminantAnalysis"]["auc"])
 plt.title("Linear Discriminant Analysis")
 plt.legend(["Accuracy", "AUC"])
 plt.xlabel("Number of Features")

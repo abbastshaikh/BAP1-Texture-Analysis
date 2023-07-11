@@ -1,10 +1,14 @@
+data_path = D:\BAP1\Data\TextureAnalysis
+save_path = D:\BAP1\Experiments
+experiment_name = Python-FullImage_isotropicVoxelSpacing
 approach = full
-threshold = 0.01
-data_path = C:\Users\mathw\Desktop\MedIX REU\Project\Data\TextureAnalysis
-save_path = C:\Users\mathw\Desktop\MedIX REU\Project\Experiments\Python-FullImage_discretizeFixedWidth=5_normalizePixelSpacing
+aggregate_across_slices = True
+intensity_features = True
 radiomic_features = True
-radiomic_feature_classes = ['firstorder', 'glcm', 'gldm', 'glrlm', 'glszm', 'ngtdm']
+radiomic_feature_classes = [glcm, gldm, glrlm, glszm, ngtdm, gldzm, ngldm]
 laws_features = True
-discretize = fixedwidth
-bin_width = 5
+resampled_slice_thickness = True
+threshold = 0.01
 pixel_spacing = 0.75
+discretize = fixedcount
+n_bins = 32
