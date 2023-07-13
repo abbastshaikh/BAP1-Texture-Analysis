@@ -9,51 +9,61 @@ diseaseLaterality = pd.read_excel(os.path.join(basePath, "BAP1 data curation.xls
 
 # Get input and output paths
 imagesPath = os.path.join(basePath, "HIRO-cases proper names")
-outFolder = "TextureAnalysis"
-os.mkdir(os.path.join(basePath, outFolder))
+outFolder = "TextureAnalysisFinal"
+os.makedirs(os.path.join(basePath, outFolder), exist_ok = True)
 
 for iCase in range(len(diseaseLaterality)):
-
-    print("Processing Case: " + str(iCase + 1) + "/" + str(len(diseaseLaterality)) + "\r")
+    
+    print("Processing Case: " + str(iCase + 1) + "/" + str(len(diseaseLaterality)) + " - " + diseaseLaterality["Case"][iCase] + "\r")
 
     if not pd.isnull(diseaseLaterality["Middle slice"][iCase]):
 
         casePath = os.path.join(basePath, outFolder, diseaseLaterality.Case[iCase] + "_" + diseaseLaterality.Laterality[iCase])
-        os.mkdir(casePath)
+        os.makedirs(casePath, exist_ok = True)
 
         # Save original images
-        imName = diseaseLaterality["Middle slice"][iCase]
-        sliceNum = int(imName[-4:])
+        repName = diseaseLaterality["Middle slice"][iCase]
+        sliceNum = int(repName[-4:])
 
-        supName = imName[:-4] + str((sliceNum - 1)).zfill(4)
-        infName = imName[:-4] + str((sliceNum + 1)).zfill(4)
+        supName = repName[:-4] + str((sliceNum - 1)).zfill(4)
+        infName = repName[:-4] + str((sliceNum + 1)).zfill(4)
 
-        image = os.path.join(imagesPath, diseaseLaterality.Case[iCase], imName)
+        repImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], repName)
         supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], supName)
         infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], infName)
 
         outPath = os.path.join(casePath, "OriginalImgs")
         os.mkdir(outPath)
 
-        shutil.copy(image, outPath)
+        shutil.copy(repImage, outPath)
         shutil.copy(supImage, outPath)
         shutil.copy(infImage, outPath)
 
-        # Save Preprocessed images
-        imName = "Thx" + diseaseLaterality["Middle slice"][iCase][3:]
-        sliceNum = int(imName[-4:])
+        # Save segmented thorax images
+        repNameThx = "Thx" + repName[3:]
+        supNameThx = "Thx" + supName[3:]
+        infNameThx = "Thx" + infName[3:]
 
-        supName = imName[:-4] + str((sliceNum - 1)).zfill(4)
-        infName = imName[:-4] + str((sliceNum + 1)).zfill(4)
+        repImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax", repNameThx)
+        supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax", supNameThx)
+        infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax", infNameThx)
 
-        image = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", imName + ".tif")
-        supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", supName + ".tif")
-        infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", infName + ".tif")
+        outPath = os.path.join(casePath, "SegmentedThorax")
+        os.mkdir(outPath)
+
+        shutil.copy(repImage, outPath)
+        shutil.copy(supImage, outPath)
+        shutil.copy(infImage, outPath)
+
+        # Save preprocessed images
+        repImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", repNameThx + ".tif")
+        supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", supNameThx + ".tif")
+        infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", infNameThx + ".tif")
 
         outPath = os.path.join(casePath, "PreprocessedImgs")
         os.mkdir(outPath)
 
-        shutil.copy(image, outPath)
+        shutil.copy(repImage, outPath)
         shutil.copy(supImage, outPath)
         shutil.copy(infImage, outPath)
 

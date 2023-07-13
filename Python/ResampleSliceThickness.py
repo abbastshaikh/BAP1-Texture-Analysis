@@ -13,7 +13,7 @@ diseaseLaterality = pd.read_excel(os.path.join(basePath, "BAP1 data curation.xls
 
 # Get input and output paths
 imagesPath = os.path.join(basePath, "HIRO-cases proper names")
-outFolder = "TextureAnalysis"
+outFolder = "TextureAnalysisFinal"
 os.makedirs(os.path.join(basePath, outFolder), exist_ok = True)
 
 # Create resampler object
@@ -28,70 +28,83 @@ for iCase in range(len(diseaseLaterality)):
 
         casePath = os.path.join(basePath, outFolder, diseaseLaterality.Case[iCase] + "_" + diseaseLaterality.Laterality[iCase])
 
+        # Get path to all original DICOMs
+        originalPath = os.path.join(imagesPath, diseaseLaterality.Case[iCase])
+        originalImageNames = sorted([os.path.join(originalPath, file) for file in next(os.walk(originalPath))[2]])
+
         # Get path to all thorax-segmented DICOMs
-        caseImagePath = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax")
-        imageNames = sorted([os.path.join(caseImagePath, file) for file in next(os.walk(caseImagePath))[2]])
-        
-        # Get path to representative slice and slice 
-        sliceName = "Thx" + diseaseLaterality["Middle slice"][iCase][3:]
-        repSlicePath = os.path.join(caseImagePath, sliceName) 
-        sliceIndex = imageNames.index(repSlicePath)
+        segmentedPath = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax")
+        segmentedImageNames = sorted([os.path.join(segmentedPath, file) for file in next(os.walk(segmentedPath))[2]])
 
-        # Read in one image for metadata
-        dicom = pydicom.dcmread(imageNames[0])
+        # Get representative slice index
+        repSlicePath = os.path.join(originalPath, diseaseLaterality["Middle slice"][iCase]) 
+        sliceIndex = originalImageNames.index(repSlicePath)
 
-        # Create volume from 2D Slices
-        size = (len(imageNames), dicom.Columns, dicom.Rows)
-        volumeArray = np.empty(size)
+        # Check ew have same number of original and segmented images
+        assert len(originalImageNames) == len(segmentedImageNames)
 
-        for i in range(len(imageNames)):
-            image = sitk.ReadImage(imageNames[i])
-            volumeArray[i, :, :] = sitk.GetArrayFromImage(image)
+        for imagePaths in [originalImageNames, segmentedImageNames]:
+            
+            # Read in one image for metadata
+            dicom = pydicom.dcmread(imagePaths[0])
+            
+            # Create volume from 2D Slices
+            size = (len(imagePaths), dicom.Rows, dicom.Columns)
+            volumeArray = np.empty(size)
+            
+            for i in range(len(imagePaths)):
+                volumeArray[i, :, :] = pydicom.dcmread(imagePaths[i]).pixel_array
+                
+            # Convert volume to Simple ITK
+            volume = sitk.GetImageFromArray(volumeArray)
+            volume.SetSpacing((dicom.PixelSpacing[0], dicom.PixelSpacing[1], dicom.SliceThickness))
 
-        # Convert volume to Simple ITK
-        volume = sitk.GetImageFromArray(volumeArray)
-        volume.SetSpacing((dicom.PixelSpacing[0], dicom.PixelSpacing[1], dicom.SliceThickness))
+            # Specify resample parameters and resample volumes
+            resampler.SetOutputSpacing((dicom.PixelSpacing[0], dicom.PixelSpacing[1], NEW_SLICE_THICKNESS))
+            newSize = [round(size * (oldSpacing / newSpacing)) for 
+                    size, newSpacing, oldSpacing in zip(volume.GetSize(), resampler.GetOutputSpacing(), volume.GetSpacing())]
+            resampler.SetSize(newSize)
+            resampledVolume = resampler.Execute(volume)
 
-        # Specify resample parameters
-        resampler.SetOutputSpacing((dicom.PixelSpacing[0], dicom.PixelSpacing[1], NEW_SLICE_THICKNESS))
-        newSize = [round(size * (oldSpacing / newSpacing)) for 
-                size, newSpacing, oldSpacing in zip(volume.GetSize(), resampler.GetOutputSpacing(), volume.GetSpacing())]
-        resampler.SetSize(newSize)
+            # Get new slice index based on new size
+            newSliceIndex = round((sliceIndex + 1) / volume.GetSize()[2] * resampler.GetSize()[2]) - 1
 
-        # Get new slice index based on new size
-        newSliceIndex = round((sliceIndex + 1) / volume.GetSize()[2] * resampler.GetSize()[2]) - 1
+            # Infer new slice location
+            newSliceLocation = dicom.SliceLocation + NEW_SLICE_THICKNESS * newSliceIndex 
 
-        # Resample image
-        resampledVolume = resampler.Execute(volume)
+            # Save original slices
+            if imagePaths[0][-11:-8] == "Img":
+                outPath = os.path.join(casePath, "OriginalImgs_Resampled")
+                os.makedirs(outPath, exist_ok = True)
 
-        newRepSlice = resampledVolume[:, :, newSliceIndex]
-        newSupSlice = resampledVolume[:, :, newSliceIndex - 1]
-        newInfSlice = resampledVolume[:, :, newSliceIndex + 1]
+                repName = "Img001_" + str(((newSliceIndex + 1))).zfill(4)
+                supName = "Img001_" + str(((newSliceIndex + 1) - 1)).zfill(4)
+                infName = "Img001_" + str(((newSliceIndex + 1) + 1)).zfill(4)
+            elif imagePaths[0][-11:-8] == "Thx":
+                outPath = os.path.join(casePath, "ResampledImgs_3mm")
+                os.makedirs(outPath, exist_ok = True)
 
-        # Infer new slice location
-        newSliceLocation = dicom.SliceLocation + NEW_SLICE_THICKNESS * newSliceIndex
-        
-        # Save slices
-        outPath = os.path.join(casePath, "ResampledImgs_" + str(int(NEW_SLICE_THICKNESS)) + "mm")
-        os.makedirs(outPath, exist_ok = True)
+                repName = "Thx001_" + str(((newSliceIndex + 1))).zfill(4)
+                supName = "Thx001_" + str(((newSliceIndex + 1) - 1)).zfill(4)
+                infName = "Thx001_" + str(((newSliceIndex + 1) + 1)).zfill(4)
 
-        repName = "Thx001_" + str(((newSliceIndex + 1))).zfill(4)
-        supName = "Thx001_" + str(((newSliceIndex + 1) - 1)).zfill(4)
-        infName = "Thx001_" + str(((newSliceIndex + 1) + 1)).zfill(4)
+            dicom.SliceThickness = NEW_SLICE_THICKNESS
 
-        dicom.SliceThickness = NEW_SLICE_THICKNESS
+            repSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex])).astype(np.int16)
+            supSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex - 1])).astype(np.int16)
+            infSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex + 1])).astype(np.int16)
+            
+            dicom.SliceLocation = newSliceLocation
+            dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -newSliceLocation]
+            dicom.PixelData = repSlice.tobytes()
+            dicom.save_as(os.path.join(outPath, repName))
 
-        dicom.SliceLocation = newSliceLocation
-        dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -newSliceLocation]
-        dicom.PixelData = sitk.GetArrayFromImage(newRepSlice).astype(np.int16)
-        dicom.save_as(os.path.join(outPath, repName))
+            dicom.SliceLocation = newSliceLocation - NEW_SLICE_THICKNESS
+            dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -(newSliceLocation - NEW_SLICE_THICKNESS)]
+            dicom.PixelData = supSlice.tobytes()
+            dicom.save_as(os.path.join(outPath, supName))
 
-        dicom.SliceLocation = newSliceLocation - NEW_SLICE_THICKNESS
-        dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -(newSliceLocation - NEW_SLICE_THICKNESS)]
-        dicom.PixelData = sitk.GetArrayFromImage(newSupSlice).astype(np.int16)
-        dicom.save_as(os.path.join(outPath, supName))
-
-        dicom.SliceLocation = newSliceLocation + NEW_SLICE_THICKNESS
-        dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -(newSliceLocation + NEW_SLICE_THICKNESS)]
-        dicom.PixelData = sitk.GetArrayFromImage(newInfSlice).astype(np.int16)
-        dicom.save_as(os.path.join(outPath, infName))
+            dicom.SliceLocation = newSliceLocation + NEW_SLICE_THICKNESS
+            dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -(newSliceLocation + NEW_SLICE_THICKNESS)]
+            dicom.PixelData = infSlice.tobytes()
+            dicom.save_as(os.path.join(outPath, infName))
