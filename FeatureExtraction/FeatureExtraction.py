@@ -41,20 +41,26 @@ parser.add_argument('--minimum_nonzero', type=int, default = 100,
 parser.add_argument('--patch_size', type=int, default = 16,
                     help = 'Size of patch ROI to analyze (only for patch method)')
 
-
 # Preprocessing
+parser.add_argument('--segmented_thorax', type=str2bool, default = True,
+                    help = 'Use thorax-segmented CT scans instead of raw, unprocessed CT scans')
+parser.add_argument('--windowing', type=str2bool, default = False,
+                    help = 'Use thorax-segmented CT scans after preprocessing with windowing operation applied to enhance contrast')
+parser.add_argument('--resampled_slice_thickness', type=str2bool, default = True,
+                    help = 'Uses images and masks after resampling to standardized slice thickness (3mm)')
+
+parser.add_argument('--corrected_contours', type=str2bool, default = False,
+                    help = 'Use radiologist corrected tumor contours rather than raw output of segmentation CNN')
 parser.add_argument('--threshold', type=float, default = 0.01,
                     help = 'Threshold for segmentation probability map')
-parser.add_argument('--resampled_slice_thickness', type=str2bool, default = True,
-                    help = 'Uses images and masks resampled to standardized slice thickness (3mm)')
-parser.add_argument('--pixel_spacing', type=float, default = 0.,
-                    help = 'Resample image and mask to standard pixel spacing. Set to 0 to not resample.')
 parser.add_argument('--mask_opening', type=str2bool, default = False,
                     help = 'Apply opening morphological operation to mask')
 
+parser.add_argument('--pixel_spacing', type=float, default = 0.,
+                    help = 'Resample image and mask to standard pixel spacing. Set to 0 to not resample.')
 parser.add_argument('--discretize', type=str, default = "", choices = ["", "fixedwidth", "fixedcount"],
                     help = 'Discretize gray levels of image (fixedwidth = fixed bin widths, fixedcount = fixed number of bins')
-parser.add_argument('--n_bins', type=int, default = 64,
+parser.add_argument('--n_bins', type=int, default = 32,
                     help = 'Number of bins to discretize gray levels of image')
 parser.add_argument('--bin_width', type=float, default = 25,
                     help = 'Bin width to discretize gray levels of image')
@@ -87,47 +93,81 @@ for caseIdx in range(len(cases)):
     caseName = cases[caseIdx].rsplit("_", 1)[0]
     print("Processing Case " + str(caseIdx + 1) + "/" + str(len(cases)) + ": ", caseName)
     
-    if args.resampled_slice_thickness:
-        imgDir = "ResampledImgs_3mm"
-        probDir = "prob_maps_Resampled"
+    # Setting correct data paths based on experiment configuration
+    if args.windowing:
+        imgDir = "PreprocessedImgs"
+    elif args.segmented_thorax:
+        imgDir = "SegmentedThorax"
     else:
         imgDir = "OriginalImgs"
-        probDir = "prob_maps"
     
-    originalImgsPath = os.listdir(os.path.join(args.data_path, cases[caseIdx], imgDir))
-    probMapsPath = os.listdir(os.path.join(args.data_path, cases[caseIdx], probDir))
+    if args.corrected_contours:
+        labelsDir = "corrected_contours"
+    else:
+        labelsDir = "prob_maps"
+        
+    if args.resampled_slice_thickness:
+        imgDir = imgDir + "_Resampled"
+        labelsDir = labelsDir + "_Resampled"
+    
+    # Get paths to images and labels
+    imgsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], imgDir)))
+    labelsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], labelsDir)))
+    
+    # Make sure we have the same number of images and segmenations
+    assert len(imgsPath) == len(labelsPath)
     
     # Limit paths to only one slice if not aggregating across all slices
     if not args.aggregate_across_slices:
-        originalImgsPath = [originalImgsPath[1]]
-        probMapsPath = [probMapsPath[1]]
+        imgsPath = [imgsPath[1]]
+        labelsPath = [labelsPath[1]]
     
-    # List to store all slices of images and probability maps for current case
+    # List to store all slices of images and segmentations for current case
     images = []
-    probMaps = []
+    labels = []
     
     # Iterate over each slice per case
-    for idx in range(len(originalImgsPath)):
+    for idx in range(len(imgsPath)):
             
-        imgPath = os.path.join(args.data_path, cases[caseIdx], imgDir, originalImgsPath[idx])
-        probPath = os.path.join(args.data_path, cases[caseIdx], probDir, probMapsPath[idx])
+        imgPath = os.path.join(args.data_path, cases[caseIdx], imgDir, imgsPath[idx])
+        labelPath = os.path.join(args.data_path, cases[caseIdx], labelsDir, labelsPath[idx])
         
         # Read in image
-        image = sitk.ReadImage(imgPath)[:, :, 0]
+        image = sitk.ReadImage(imgPath)
+        
+        # Remove third dimension of slice if it exists
+        if len(image.GetSize()) == 3:
+            image = image[:, :, 0]
+        
+        # Windowed images are TIFs, which does not preserve image geometry (e.g. spacing)
+        # We load DICOM image and transfer image geometry parameters here
+        if args.windowing:
+            if args.resampled_slice_thickness:
+                dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax_Resampled", 
+                                                    imgsPath[idx].split(".")[0]))[:, :, 0] # Dicom has the same name as the TIF without the file extension
+            else:
+                dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax", 
+                                                    imgsPath[idx].split(".")[0]))[:, :, 0]
+            
+            image.SetDirection(dicom.GetDirection())
+            image.SetSpacing(dicom.GetSpacing())
+            image.SetOrigin(dicom.GetOrigin())
         
         # Handling edge case, original image size doesn't match
         if caseName == "29_18000101_CT_AXL_W":
             image = image[:, -512:]
         
-        # Read in probability map and threshold to produce mask
-        probMap = sitk.ReadImage(probPath)
+        # Read in segmentation and binarize, if necessary
+        label = sitk.ReadImage(labelPath)
+        if not args.corrected_contours:
+            label = sitk.BinaryThreshold(label, lowerThreshold = args.threshold)
         
-        # Add to list of images/prob maps
+        # Add to list of images/segmentations
         images.append(image)
-        probMaps.append(probMap)
+        labels.append(label)
         
     # Extract features, save if successfull
-    extractedFeatures = featureExtractor.extractFeatures(images, probMaps)
+    extractedFeatures = featureExtractor.extractFeatures(images, labels)
     
     if extractedFeatures:
         allFeatures.append(extractedFeatures)

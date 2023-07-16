@@ -41,15 +41,9 @@ class FeatureExtractor:
         
             self.nyxusExtractor = Nyxus(["*ALL*"])
             
-        print(self.pyRadiomicsExtractor.enabledFeatures)
-        print(self.intensityExtractor.enabledFeatures)
-        
-    # Preprocess single SimpleITK image and probability map and return resampled image 
+    # Preprocess single SimpleITK image and segmentation mask and return resampled image 
     # and mask and processed image after applying discretization and preprocessing filters
-    def preprocess (self, image, probMap):
-        
-        # Threshold probabality map to get mask
-        mask = sitk.BinaryThreshold(probMap, lowerThreshold = self.args["threshold"])
+    def preprocess (self, image, mask):
         
         # Match mask geometry to image geometry
         mask.SetDirection(image.GetDirection())
@@ -98,11 +92,11 @@ class FeatureExtractor:
         
         return resampledImage, processedImage, resampledMask
     
-    # Preprocess list of image and probabiltiy map slices
-    def preprocessMultiple (self, images, probMaps):
+    # Preprocess list of image and segmentation mask slices
+    def preprocessMultiple (self, images, masks):
         
         # Check if same number of images and masks are provided
-        if len(images) != len(probMaps):
+        if len(images) != len(masks):
             print("Unequal number of images and masks. Preprocessing failed.")
             return
         
@@ -112,7 +106,7 @@ class FeatureExtractor:
         resampledMasks = []
         
         for idx in range(len(images)):
-            resampledImage, processedImage, resampledMask = self.preprocess(images[idx], probMaps[idx])
+            resampledImage, processedImage, resampledMask = self.preprocess(images[idx], masks[idx])
             
             resampledImages.append(resampledImage)
             processedImages.append(processedImage)
@@ -201,16 +195,16 @@ class FeatureExtractor:
 
         return aggregatedFeatures
     
-    # Preprocess and aggregate texture and intensity features for list of image and probability map slices
-    def extractFeatures (self, images, probMaps):
+    # Preprocess and aggregate texture and intensity features for list of image and segmentation mask slices
+    def extractFeatures (self, images, masks):
         
         # Check if same number of images and masks are provided
-        if len(images) != len(probMaps):
-            print("Unequal number of images and probability maps. No features extracted")
+        if len(images) != len(masks):
+            print("Unequal number of images and masks. No features extracted")
             return 
         
         # Get preprocessed images and masks
-        resampledImages, processedImages, resampledMasks = self.preprocessMultiple(images, probMaps)
+        resampledImages, processedImages, resampledMasks = self.preprocessMultiple(images, masks)
         
         # Generate aggregated intensity features
         intensityFeatures = self.getAggregatedIntensityFeatures(resampledImages, resampledMasks)

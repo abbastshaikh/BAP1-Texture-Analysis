@@ -16,14 +16,14 @@ from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix
 import matplotlib.pyplot as plt
 
 dataPath = r"D:\BAP1\Data"
-expirementPath = r"D:\BAP1\Experiments\Python-FullImage_correctedAggregationAndDiscretization"
+expirementPath = r"D:/BAP1/Experiments/Python-FullImage_correctedAggregationAndDiscretization"
 
 # Load feature data
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
 
 # Load labels
 labels = pd.read_excel(os.path.join(dataPath, "BAP1 data curation.xlsx"), 
-                       sheet_name = "Disease laterality")[["Case", "Somatic BAP1 mutation status"]]
+                       sheet_name = "Disease laterality - Feng")[["Case", "Somatic BAP1 mutation status"]]
 
 # Convert labels (in Yes/No format) to binary labels
 labels.rename(columns = {"Somatic BAP1 mutation status":"BAP1"}, inplace = True)
@@ -33,9 +33,9 @@ labels["BAP1"] = labels["BAP1"].str.lower().replace(to_replace = ['yes', 'no'], 
 features = pd.merge(features, labels, on = "Case", how = "left")
 
 # Drop rows with null values, case column
-features = features[~features.isnull().any(axis=1)].drop("Case", axis = 1)
+featuresNum = features[~features.isnull().any(axis=1)].drop("Case", axis = 1)
 
-X, y = features.iloc[:,:-1], features.iloc[:,-1]
+X, y = featuresNum.iloc[:,:-1], featuresNum.iloc[:,-1]
 
 all_metrics = {}
 n_features = range(1, len(X.columns))
@@ -46,17 +46,12 @@ n_features = range(1, len(X.columns))
 # includeFeatures = erosionCheck[erosionCheck["pearson"] > 0.5]
 # excludeFeatures = erosionCheck[erosionCheck["pearson"] < 0.5]
 # X = X[X.columns.intersection(includeFeatures)]
-# n_features = [1, 2, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 83]
 
 # print(includeFeatures)
 # print(excludeFeatures)
 
-import warnings
-warnings.filterwarnings(action='ignore', category=RuntimeWarning)
-warnings.filterwarnings(action='ignore', category=UserWarning)
-
 ####
-#%%
+
 # Note:
 # Low sample size produces large bias in error on test dataset
 # Hence, we perform a Leave-One-Out Cross Validation
@@ -80,7 +75,7 @@ def getModelMetrics (model, n_features):
             ('classification', model)
             ])
         
-        cv = LeaveOneOut()
+        cv = LeaveOneOut() # StratifiedKFold(n_splits = 20) 
         y_prob = cross_val_predict(pipeline, X, y, cv = cv, method = 'predict_proba')
         y_pred = np.argmax(y_prob, axis = 1)
         
@@ -94,11 +89,19 @@ def getModelMetrics (model, n_features):
         
     all_metrics[model.__class__.__name__] = metrics
     
+    plt.plot(n_features, all_metrics[model.__class__.__name__]["accuracy"])
+    plt.plot(n_features, all_metrics[model.__class__.__name__]["auc"])
+    plt.title(model.__class__.__name__)
+    plt.legend(["Accuracy", "AUC"])
+    plt.xlabel("Number of Features")
+    plt.show()
+#%%
+    
 getModelMetrics(SVC(probability = True), n_features)
 getModelMetrics(LogisticRegression(), n_features)
 getModelMetrics(DecisionTreeClassifier(max_depth = 5), n_features)
 getModelMetrics(LinearDiscriminantAnalysis(), n_features)
-# getModelMetrics(RandomForestClassifier(), n_features)
+# # getModelMetrics(RandomForestClassifier(), n_features)
 
 # Save to file
 with pd.ExcelWriter(os.path.join(expirementPath, "results.xlsx")) as writer:
@@ -109,70 +112,46 @@ with pd.ExcelWriter(os.path.join(expirementPath, "results.xlsx")) as writer:
             df.loc[model] = all_metrics[model][metric]
         
         df.to_excel(writer, metric)
-
-plt.plot(range(1, len(X.columns)), all_metrics["SVC"]["accuracy"])
-plt.plot(range(1, len(X.columns)), all_metrics["SVC"]["auc"])
-plt.title("SVM")
-plt.legend(["Accuracy", "AUC"])
-plt.xlabel("Number of Features")
-plt.show()
-
-plt.plot(range(1, len(X.columns)), all_metrics["LogisticRegression"]["accuracy"])
-plt.plot(range(1, len(X.columns)), all_metrics["LogisticRegression"]["auc"])
-plt.title("Logistic Regression")
-plt.legend(["Accuracy", "AUC"])
-plt.xlabel("Number of Features")
-plt.show()
-
-plt.plot(range(1, len(X.columns)), all_metrics["DecisionTreeClassifier"]["accuracy"])
-plt.plot(range(1, len(X.columns)), all_metrics["DecisionTreeClassifier"]["auc"])
-plt.title("Decision Tree")
-plt.legend(["Accuracy", "AUC"])
-plt.xlabel("Number of Features")
-plt.show()
-
-plt.plot(range(1, len(X.columns)), all_metrics["LinearDiscriminantAnalysis"]["accuracy"])
-plt.plot(range(1, len(X.columns)), all_metrics["LinearDiscriminantAnalysis"]["auc"])
-plt.title("Linear Discriminant Analysis")
-plt.legend(["Accuracy", "AUC"])
-plt.xlabel("Number of Features")
-plt.show()
-
+        
 #%%
-# metrics = {"accuracy": [],
-#            "auc": [],
-#            "sensitivity": [],
-#            "specificity": []
-#            }
+metrics = {"accuracy": [],
+            "auc": [],
+            "sensitivity": [],
+            "specificity": []
+            }
 
-# model = DecisionTreeClassifier(max_depth = 5)
-# print(model.__class__.__name__)     
+model = DecisionTreeClassifier()
+print(model.__class__.__name__)     
 
-# n = 35
+n = 125
 
-# pipeline = Pipeline(steps = [
-#     ('scaling', MinMaxScaler()),
-#     ('feature_selection', SelectKBest(k = n)),
-#     ('classification', model)
-#     ])
+pipeline = Pipeline(steps = [
+    ('scaling', MinMaxScaler()),
+    ('feature_selection', SelectKBest(k = n)),
+    ('classification', model)
+    ])
 
-# cv = LeaveOneOut()
-# y_prob = cross_val_predict(pipeline, X, y, cv = cv, method = 'predict_proba')
-# y_pred = np.argmax(y_prob, axis = 1)
+cv = LeaveOneOut()
+y_prob = cross_val_predict(pipeline, X, y, cv = cv, method = 'predict_proba')
+y_pred = np.argmax(y_prob, axis = 1)
 
-# metrics["accuracy"].append(sum(y == y_pred) / len(y))
-# metrics["auc"].append(roc_auc_score(y, y_prob[:, 1]))
+metrics["accuracy"].append(sum(y == y_pred) / len(y))
+metrics["auc"].append(roc_auc_score(y, y_prob[:, 1]))
 
-# cm = confusion_matrix(y, y_pred)
+cm = confusion_matrix(y, y_pred)
 
-# metrics["sensitivity"].append(cm[0,0] / (cm[0,0] + cm[0,1]))
-# metrics["specificity"].append(cm[1,1] / (cm[1,0] + cm[1,1]))
+metrics["sensitivity"].append(cm[0,0] / (cm[0,0] + cm[0,1]))
+metrics["specificity"].append(cm[1,1] / (cm[1,0] + cm[1,1]))
 
-# print(metrics)
+print(metrics)
 
-# fpr, tpr, threshold = roc_curve(y, y_prob[:, 1])
-# plt.plot(fpr, tpr)
-# plt.title("ROC Curve")
-# plt.xlabel("False Positive Rate")
-# plt.ylabel("True Positive Rate")
-# plt.show()
+fpr, tpr, threshold = roc_curve(y, y_prob[:, 1])
+
+fig = plt.figure()
+ax = fig.add_subplot()
+ax.set_aspect('equal', adjustable='box')
+plt.plot(fpr, tpr)
+plt.title("ROC Curve")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.show()

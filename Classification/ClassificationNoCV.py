@@ -22,7 +22,7 @@ features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
 
 # Load Labels
 labels = pd.read_excel(os.path.join(dataPath, "BAP1 data curation.xlsx"), 
-                       sheet_name = "Disease laterality")[["Case", "Somatic BAP1 mutation status"]]
+                       sheet_name = "Disease laterality - Feng")[["Case", "Somatic BAP1 mutation status"]]
 
 # Convert labels (in Yes/No format) to binary labels
 labels.rename(columns = {"Somatic BAP1 mutation status":"BAP1"}, inplace = True)
