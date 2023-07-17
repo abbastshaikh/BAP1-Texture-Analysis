@@ -102,7 +102,7 @@ for caseIdx in range(len(cases)):
         imgDir = "OriginalImgs"
     
     if args.corrected_contours:
-        labelsDir = "corrected_contours"
+        labelsDir = "masks"
     else:
         labelsDir = "prob_maps"
         

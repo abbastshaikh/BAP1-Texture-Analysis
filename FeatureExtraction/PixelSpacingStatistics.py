@@ -5,14 +5,14 @@ import numpy as np
 import pydicom
 
 # Getting average pixel spacing
-dataPath = r"C:\Users\mathw\Desktop\MedIX REU\Project\Data\TextureAnalysis"
+dataPath = r"D:\BAP1\Data\TextureAnalysisFinal"
 reader = sitk.ImageFileReader()
 spacing = []
 sliceThickness = []
 
 for case in os.listdir(dataPath):
     
-    imgFolderPath = os.path.join(dataPath, case, "OriginalImgs")
+    imgFolderPath = os.path.join(dataPath, case, "SegmentedThorax")
     imgPath = os.path.join(imgFolderPath, os.listdir(imgFolderPath)[0])
     
     reader.SetFileName(imgPath)
@@ -23,15 +23,11 @@ for case in os.listdir(dataPath):
     dicom = pydicom.dcmread(imgPath)
     sliceThickness.append(dicom.SliceThickness)
     
-    print(imgPath)
-    print(dicom.SliceThickness)
-    
 xSpacing = [s[0] for s in spacing]  
 ySpacing = [s[1] for s in spacing]   
 
 avgSpacing = [np.mean(xSpacing), np.mean(ySpacing)]
 print("Average Spacing:", avgSpacing)
-
 print("Average Slice Thickness:", np.mean(sliceThickness))
 
 plt.hist(xSpacing)
