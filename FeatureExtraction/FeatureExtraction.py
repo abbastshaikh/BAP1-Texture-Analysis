@@ -157,9 +157,15 @@ for caseIdx in range(len(cases)):
         if caseName == "29_18000101_CT_AXL_W":
             image = image[:, -512:]
         
-        # Read in segmentation and binarize, if necessary
+        # Read in segmentation
         label = sitk.ReadImage(labelPath)
-        if not args.corrected_contours:
+        
+        # Masks are stored as 0 as negative, 255 as positive, so we rescale to 0 and 1
+        if args.corrected_contours:
+            label = sitk.RescaleIntensity(label, outputMinimum = 0, outputMaximum = 1)
+            label[0, 0] = 0
+        # Otherwise we binarize at specified threshold
+        else:
             label = sitk.BinaryThreshold(label, lowerThreshold = args.threshold)
         
         # Add to list of images/segmentations

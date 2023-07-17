@@ -6,6 +6,11 @@ import numpy as np
 from FeatureExtractionUtil import FeatureExtractor
 from scipy.stats import pearsonr
 
+
+import matplotlib.pyplot as plt
+
+
+
 np.random.seed(0)
 logger = radiomics.logging.getLogger("radiomics")
 logger.setLevel(radiomics.logging.ERROR)
@@ -24,7 +29,7 @@ args = {
     "segmented_thorax": True,
     "windowing": False,
     "resampled_slice_thickness": True,
-    "corrected_contours": False,
+    "corrected_contours": True,
     "threshold": 0.01,
     "mask_opening": False,
     "pixel_spacing": 0.75,
@@ -60,7 +65,7 @@ for caseIdx in range(len(cases)):
         imgDir = "OriginalImgs"
     
     if args["corrected_contours"]:
-        labelsDir = "corrected_contours"
+        labelsDir = "Masks"
     else:
         labelsDir = "prob_maps"
         
@@ -118,7 +123,12 @@ for caseIdx in range(len(cases)):
         
         # Read in segmentation and binarize, if necessary
         label = sitk.ReadImage(labelPath)
-        if not args["corrected_contours"]:
+        
+        # Masks are stored as 0 as negative, 255 as positive, so we rescale to 0 and 1
+        if args["corrected_contours"]:
+            label = sitk.RescaleIntensity(label, outputMinimum = 0, outputMaximum = 1)
+        # Otherwise we binarize at specified threshold
+        else:
             label = sitk.BinaryThreshold(label, lowerThreshold = args["threshold"])
         
         # Get texture features for eroded masks
@@ -163,4 +173,6 @@ for feat in allFeatures.columns:
     pearson = pearsonr(featureValues, erodedFeatureValues)
     featureCorrelation.loc[len(featureCorrelation)] = [feat, pearson.statistic, pearson.pvalue]
     
+allFeatures.to_csv(os.path.join(experimentPath, "features.csv"), index = False)
+allErodedFeatures.to_csv(os.path.join(experimentPath, "featuresEroded.csv"), index = False)
 featureCorrelation.to_csv(os.path.join(experimentPath, "featureCorrelation.csv"), index = False)
