@@ -45,10 +45,8 @@ class FeatureExtractor:
     # and mask and processed image after applying discretization and preprocessing filters
     def preprocess (self, image, mask):
         
-        # Match mask geometry to image geometry
-        mask.SetDirection(image.GetDirection())
-        mask.SetSpacing(image.GetSpacing())
-        mask.SetOrigin(image.GetOrigin())
+        # Match mask metadata to image metadata
+        mask.CopyInformation(image)
         
         # Resample to standardized pixel spacing
         if self.args["pixel_spacing"]:
@@ -77,20 +75,41 @@ class FeatureExtractor:
                                                                       binCount = self.args["n_bins"]
                                                                       )[0]
         
-            # Convert back to SimpleITK image, and match geometry
+            # Convert back to SimpleITK image, and match metadata
             processedImage = sitk.GetImageFromArray(processedImage)
-            processedImage.SetDirection(resampledImage.GetDirection())
-            processedImage.SetSpacing(resampledImage.GetSpacing())
-            processedImage.SetOrigin(resampledImage.GetOrigin())
+            processedImage.CopyInformation(resampledImage)
             
         else:
             processedImage = resampledImage
             
         # Apply preprocessing image filters
-        if self.args["preprocessing_filter"] == "LoG":
-            processedImage = sitk.LaplacianRecursiveGaussian(processedImage, sigma = self.args["LoG_sigma"])
+        filteredImages = []
+        filterNames = []
         
-        return resampledImage, processedImage, resampledMask
+        if "LoG" in self.args["preprocessing_filters"]:
+            for sigma in self.args["LoG_sigma"]:
+                LoGImage = sitk.LaplacianRecursiveGaussian(processedImage, sigma = sigma)
+                filteredImages.append(LoGImage)
+                filterNames.append("LoG_sigma=" + str(sigma))
+                
+        if "wavelet" in self.args["preprocessing_filters"]:
+            for wavelet in self.args["wavelet"]:
+                waveletTransform = radiomics.imageoperations.getWaveletImage(processedImage, resampledMask, wavelet = wavelet)
+                while True:
+                    try:
+                        waveletImage = next(waveletTransform)
+                        filteredImages.append(waveletImage[0])
+                        filterNames.append(waveletImage[1].replace("wavelet", wavelet))
+                    except StopIteration:
+                        break
+            
+        if "LBP" in self.args["preprocessing_filters"]:
+            for radius in self.args["LBP_radius"]:
+                LBPImage = next(radiomics.imageoperations.getLBP2DImage(processedImage, resampledMask, lbp2DRadius = radius))[0]
+                filteredImages.append(LBPImage)
+                filterNames.append("LBP_radius=" + str(radius))
+        
+        return resampledImage, processedImage, filteredImages, filterNames, resampledMask
     
     # Preprocess list of image and segmentation mask slices
     def preprocessMultiple (self, images, masks):
@@ -103,16 +122,18 @@ class FeatureExtractor:
         # Compiled resample and preprocessed images and masks across
         resampledImages = []
         processedImages = []
+        filteredImages_ = []
         resampledMasks = []
         
         for idx in range(len(images)):
-            resampledImage, processedImage, resampledMask = self.preprocess(images[idx], masks[idx])
+            resampledImage, processedImage, filteredImages, filterNames, resampledMask = self.preprocess(images[idx], masks[idx])
             
             resampledImages.append(resampledImage)
             processedImages.append(processedImage)
+            filteredImages_.append(filteredImages)
             resampledMasks.append(resampledMask)
             
-        return resampledImages, processedImages, resampledMasks
+        return resampledImages, processedImages, filteredImages_, filterNames, resampledMasks
         
     # Gets texture features from single SimpleITK image and mask
     def getTextureFeatures (self, image, mask):
@@ -200,20 +221,37 @@ class FeatureExtractor:
         
         # Check if same number of images and masks are provided
         if len(images) != len(masks):
-            print("Unequal number of images and masks. No features extracted")
+            print("Unequal number of images and masks. No features extracted.")
+            return 
+        
+        if len(images) == 0:
+            print("No images provided. No features extracted.")
             return 
         
         # Get preprocessed images and masks
-        resampledImages, processedImages, resampledMasks = self.preprocessMultiple(images, masks)
+        resampledImages, processedImages, filteredImages, filterNames, resampledMasks = self.preprocessMultiple(images, masks)
         
-        # Generate aggregated intensity features
+        # Generate aggregated intensity and texture features for original images
         intensityFeatures = self.getAggregatedIntensityFeatures(resampledImages, resampledMasks)
-        
-        # Generate aggregated texture features
         textureFeatures = self.getAggregatedTextureFeatures(processedImages, resampledMasks)
         
+        # Merge feature dictionaries
+        features = intensityFeatures | textureFeatures 
+        
+        # Generate texture features for filtered images
+        for i in range(len(filteredImages[0])):
+            # Get all image slices with same filter applied and generate aggregated texture features
+            currentFiltered = [filteredImages[j][i] for j in range(len(filteredImages))]
+            filteredFeatures = self.getAggregatedTextureFeatures(currentFiltered, resampledMasks)
+            
+            # Rename features names according to filter applied
+            filteredFeatures = {filterNames[i] + "_" + k.removeprefix("original_") : v for k, v in filteredFeatures.items()}
+            
+            # Merge with main feature dictionary
+            features = features | filteredFeatures
+            
         # Return merged dictionary
-        return intensityFeatures | textureFeatures 
+        return features
 
     # Resample 2-D image to new pixel spacing
     @staticmethod
@@ -318,4 +356,3 @@ class FeatureExtractor:
 # boundingBox = radiomics.imageoperations.checkMask(resampledImage, resampledMask)[0]
 # resampledImage, resampledMask = radiomics.imageoperations.cropToTumorMask(resampledImage, resampledMask, boundingBox)
 ### GET ROIS
-# Methods for aggregation ?

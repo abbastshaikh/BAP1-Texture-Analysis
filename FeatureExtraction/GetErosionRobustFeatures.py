@@ -6,11 +6,6 @@ import numpy as np
 from FeatureExtractionUtil import FeatureExtractor
 from scipy.stats import pearsonr
 
-
-import matplotlib.pyplot as plt
-
-
-
 np.random.seed(0)
 logger = radiomics.logging.getLogger("radiomics")
 logger.setLevel(radiomics.logging.ERROR)
@@ -127,6 +122,7 @@ for caseIdx in range(len(cases)):
         # Masks are stored as 0 as negative, 255 as positive, so we rescale to 0 and 1
         if args["corrected_contours"]:
             label = sitk.RescaleIntensity(label, outputMinimum = 0, outputMaximum = 1)
+            label[0, 0] = 0
         # Otherwise we binarize at specified threshold
         else:
             label = sitk.BinaryThreshold(label, lowerThreshold = args["threshold"])
@@ -173,6 +169,6 @@ for feat in allFeatures.columns:
     pearson = pearsonr(featureValues, erodedFeatureValues)
     featureCorrelation.loc[len(featureCorrelation)] = [feat, pearson.statistic, pearson.pvalue]
     
-allFeatures.to_csv(os.path.join(experimentPath, "features.csv"), index = False)
+allFeatures.to_csv(os.path.join(experimentPath, "featuresNoneroded.csv"), index = False)
 allErodedFeatures.to_csv(os.path.join(experimentPath, "featuresEroded.csv"), index = False)
 featureCorrelation.to_csv(os.path.join(experimentPath, "featureCorrelation.csv"), index = False)

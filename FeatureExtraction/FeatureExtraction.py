@@ -7,9 +7,20 @@ import SimpleITK as sitk
 import numpy as np
 from FeatureExtractionUtil import FeatureExtractor, str2bool
 
+# Set random seed
 np.random.seed(0)
+
+# Silence warnings for PyRadiomics and PyFeats
 logger = radiomics.logging.getLogger("radiomics")
 logger.setLevel(radiomics.logging.ERROR)
+
+import warnings
+warnings.filterwarnings(
+    action = 'ignore',
+    category = RuntimeWarning,
+    module = 'pyfeats',
+    message = 'invalid value encountered in scalar divide'
+)
 
 # Get experiment config
 parser = configargparse.ArgumentParser()
@@ -65,10 +76,14 @@ parser.add_argument('--n_bins', type=int, default = 32,
 parser.add_argument('--bin_width', type=float, default = 25,
                     help = 'Bin width to discretize gray levels of image')
 
-parser.add_argument('--preprocessing_filter', type=str, choices = ['', 'LoG'], default = '',
-                    help = 'Filter to apply to image prior to texture analysis')
-parser.add_argument('--LoG_sigma', type=float, default = 2.,
-                    help = 'Std of Gaussian kernel for LoG filter')
+parser.add_argument('--preprocessing_filters', type=str, nargs = "+", choices = ['LoG', 'wavelet', 'LBP'], default = [],
+                    help = 'Filter to apply to image prior to texture analysis. Choices are Laplacian of Gaussian (LoG), wavelet, or Local Binary Pattern (LBP)')
+parser.add_argument('--LoG_sigma', type=float, nargs = "+", default = 2.,
+                    help = 'Std of Gaussian kernel for LoG filter, can input multiple.')
+parser.add_argument('--wavelet', type=str, nargs = "+", default = "bior1.1",
+                    help = 'Wavelet to use for wavelet transform, can input multiple. Must be in pyWavelet.wavelist().')
+parser.add_argument('--LBP_radius', type=float, nargs = "+", default = 1.,
+                    help = 'Radius of Local Binary Pattern filter, can input multiple.')
 
 args = parser.parse_args()
 args_dict = vars(args)
@@ -139,8 +154,8 @@ for caseIdx in range(len(cases)):
         if len(image.GetSize()) == 3:
             image = image[:, :, 0]
         
-        # Windowed images are TIFs, which does not preserve image geometry (e.g. spacing)
-        # We load DICOM image and transfer image geometry parameters here
+        # Windowed images are TIFs, which does not preserve image metadata (e.g. spacing)
+        # We load DICOM image and transfer image metadata parameters here
         if args.windowing:
             if args.resampled_slice_thickness:
                 dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax_Resampled", 
@@ -149,9 +164,7 @@ for caseIdx in range(len(cases)):
                 dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax", 
                                                     imgsPath[idx].split(".")[0]))[:, :, 0]
             
-            image.SetDirection(dicom.GetDirection())
-            image.SetSpacing(dicom.GetSpacing())
-            image.SetOrigin(dicom.GetOrigin())
+            image.CopyInformation(dicom)
         
         # Handling edge case, original image size doesn't match
         if caseName == "29_18000101_CT_AXL_W":

@@ -16,7 +16,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix
 import matplotlib.pyplot as plt
 
 dataPath = r"D:\BAP1\Data"
-expirementPath = r"D:/BAP1/Experiments/Python-FullImage_correctedAggregationAndDiscretization"
+expirementPath = r"D:/BAP1/Experiments/Python-FullImage_correctedContours"
 
 # Load feature data
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
@@ -75,7 +75,7 @@ def getModelMetrics (model, n_features):
             ('classification', model)
             ])
         
-        cv = LeaveOneOut() # StratifiedKFold(n_splits = 20) 
+        cv = StratifiedKFold(n_splits = 20) # LeaveOneOut() # StratifiedKFold(n_splits = 20) 
         y_prob = cross_val_predict(pipeline, X, y, cv = cv, method = 'predict_proba')
         y_pred = np.argmax(y_prob, axis = 1)
         
@@ -97,8 +97,8 @@ def getModelMetrics (model, n_features):
     plt.show()
 #%%
     
-getModelMetrics(SVC(probability = True), n_features)
-getModelMetrics(LogisticRegression(), n_features)
+# getModelMetrics(SVC(probability = True), n_features)
+# getModelMetrics(LogisticRegression(), n_features)
 getModelMetrics(DecisionTreeClassifier(max_depth = 5), n_features)
 getModelMetrics(LinearDiscriminantAnalysis(), n_features)
 # # getModelMetrics(RandomForestClassifier(), n_features)
