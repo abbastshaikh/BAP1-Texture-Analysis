@@ -86,15 +86,19 @@ class FeatureExtractor:
         filteredImages = []
         filterNames = []
         
+        # Laplacian of Gaussian filter
         if "LoG" in self.args["preprocessing_filters"]:
             for sigma in self.args["LoG_sigma"]:
                 LoGImage = sitk.LaplacianRecursiveGaussian(processedImage, sigma = sigma)
                 filteredImages.append(LoGImage)
                 filterNames.append("LoG_sigma=" + str(sigma))
-                
+            
+        # Wavelet filter
         if "wavelet" in self.args["preprocessing_filters"]:
             for wavelet in self.args["wavelet"]:
                 waveletTransform = radiomics.imageoperations.getWaveletImage(processedImage, resampledMask, wavelet = wavelet)
+                
+                # Iterating through all decompositions
                 while True:
                     try:
                         waveletImage = next(waveletTransform)
@@ -102,7 +106,8 @@ class FeatureExtractor:
                         filterNames.append(waveletImage[1].replace("wavelet", wavelet))
                     except StopIteration:
                         break
-            
+        
+        # Local Binary Pattern filter
         if "LBP" in self.args["preprocessing_filters"]:
             for radius in self.args["LBP_radius"]:
                 LBPImage = next(radiomics.imageoperations.getLBP2DImage(processedImage, resampledMask, lbp2DRadius = radius))[0]
@@ -156,8 +161,19 @@ class FeatureExtractor:
                 
         # Extracts Laws' features via PyFeats
         if self.args["laws_features"]:
-            l_features, l_labels = pyfeats.lte_measures(imgArray, maskArray, l = 5)
-            features.update(dict(zip(l_labels, l_features)))
+            laws_features, laws_labels = pyfeats.lte_measures(imgArray, maskArray, l = 5)
+            features.update(dict(zip(laws_labels, laws_features)))
+            
+        # Extracts Laws' features via PyFeats
+        if self.args["fractal_features"]:
+            fractal_features, fractal_labels = pyfeats.fdta(imgArray, maskArray)
+            features.update(dict(zip(fractal_labels, fractal_features)))
+            
+        # Extracts Laws' features via PyFeats
+        if self.args["fourier_features"]:
+            fourier_features, fourier_labels = pyfeats.fps(imgArray, maskArray)
+            features.update(dict(zip(fourier_labels, fourier_features)))
+            
             
         return features
     

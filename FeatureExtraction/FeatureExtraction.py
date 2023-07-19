@@ -15,6 +15,7 @@ logger = radiomics.logging.getLogger("radiomics")
 logger.setLevel(radiomics.logging.ERROR)
 
 import warnings
+# Warning for Laws features extraction associated with sparse segmentation labels
 warnings.filterwarnings(
     action = 'ignore',
     category = RuntimeWarning,
@@ -22,9 +23,19 @@ warnings.filterwarnings(
     message = 'invalid value encountered in scalar divide'
 )
 
-# Get experiment config
+# Warning for fractal features extraction associated with sparse segmentation labels
+warnings.filterwarnings(
+    action = 'ignore',
+    category = RuntimeWarning,
+    module = 'pyfeats',
+    message = 'divide by zero encountered in log10'
+)
+
+### Getting experiment configuration
 parser = configargparse.ArgumentParser()
 parser.add_argument('--config', is_config_file=True)
+
+### Paths to read data and write experiment outputs
 parser.add_argument('--data_path', type=str,
                     help = 'Path to folder containing images')
 parser.add_argument('--save_path', type=str,
@@ -32,12 +43,15 @@ parser.add_argument('--save_path', type=str,
 parser.add_argument('--experiment_name', type=str,
                     help = 'Name of experiment (will be title of experiment folder)')
 
-# Feature Extraction
+### Customize Feature Extraction
+
+# High-level approach (How to collect and aggregate texture featuress)
 parser.add_argument('--approach', type=str, choices = ['full', 'each', 'patch'], default = 'full',
                     help = 'Approach for feature extraction(full = Full Image, each = Each Contiguous ROI, patch = Extract a Patch')
 parser.add_argument('--aggregate_across_slices', type=str2bool, default = True,
                     help = 'Average texture features across slices, or report for one slice only')
 
+# Specifying features to extract
 parser.add_argument('--intensity_features', type=str2bool, default = True,
                     help = 'Extract intensity features - (y/n)')
 parser.add_argument('--radiomic_features', type=str2bool, default = True,
@@ -46,13 +60,20 @@ parser.add_argument('--radiomic_feature_classes', type=str, nargs = "+", default
                     help = 'Texture features to extract via radiomics feature extractor')
 parser.add_argument('--laws_features', type=str2bool, default = True,
                     help = 'Extract Laws features - (y/n)')
+parser.add_argument('--fractal_features', type=str2bool, default = True,
+                    help = 'Extract fractal dimension features - (y/n)')
+parser.add_argument('--fourier_features', type=str2bool, default = True,
+                    help = 'Extract Fourier power spectrum features - (y/n)')
 
+# Approach-specific parameters
 parser.add_argument('--minimum_nonzero', type=int, default = 100,
                     help = 'Minimum number of nonzero-pixels in ROI mask to be considered (only for each method)')
 parser.add_argument('--patch_size', type=int, default = 16,
                     help = 'Size of patch ROI to analyze (only for patch method)')
 
-# Preprocessing
+### Customize Preprocessing Pipeline
+
+# Specifying which CT images to use
 parser.add_argument('--segmented_thorax', type=str2bool, default = True,
                     help = 'Use thorax-segmented CT scans instead of raw, unprocessed CT scans')
 parser.add_argument('--windowing', type=str2bool, default = False,
@@ -60,6 +81,7 @@ parser.add_argument('--windowing', type=str2bool, default = False,
 parser.add_argument('--resampled_slice_thickness', type=str2bool, default = True,
                     help = 'Uses images and masks after resampling to standardized slice thickness (3mm)')
 
+# Specifying which tumor segmentations to use
 parser.add_argument('--corrected_contours', type=str2bool, default = False,
                     help = 'Use radiologist corrected tumor contours rather than raw output of segmentation CNN')
 parser.add_argument('--threshold', type=float, default = 0.01,
@@ -67,6 +89,7 @@ parser.add_argument('--threshold', type=float, default = 0.01,
 parser.add_argument('--mask_opening', type=str2bool, default = False,
                     help = 'Apply opening morphological operation to mask')
 
+# Image standardization parameters (resampling and discretization)
 parser.add_argument('--pixel_spacing', type=float, default = 0.,
                     help = 'Resample image and mask to standard pixel spacing. Set to 0 to not resample.')
 parser.add_argument('--discretize', type=str, default = "", choices = ["", "fixedwidth", "fixedcount"],
@@ -76,6 +99,7 @@ parser.add_argument('--n_bins', type=int, default = 32,
 parser.add_argument('--bin_width', type=float, default = 25,
                     help = 'Bin width to discretize gray levels of image')
 
+# Preprocessing filter parameters
 parser.add_argument('--preprocessing_filters', type=str, nargs = "+", choices = ['LoG', 'wavelet', 'LBP'], default = [],
                     help = 'Filter to apply to image prior to texture analysis. Choices are Laplacian of Gaussian (LoG), wavelet, or Local Binary Pattern (LBP)')
 parser.add_argument('--LoG_sigma', type=float, nargs = "+", default = 2.,
