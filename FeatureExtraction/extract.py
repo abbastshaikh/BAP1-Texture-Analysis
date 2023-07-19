@@ -4,17 +4,13 @@ import yaml
 import configargparse
 import radiomics
 import SimpleITK as sitk
-import numpy as np
-from FeatureExtractionUtil import FeatureExtractor, str2bool
-
-# Set random seed
-np.random.seed(0)
+from util import FeatureExtractor, str2bool
+import warnings
 
 # Silence warnings for PyRadiomics and PyFeats
 logger = radiomics.logging.getLogger("radiomics")
 logger.setLevel(radiomics.logging.ERROR)
 
-import warnings
 # Warning for Laws features extraction associated with sparse segmentation labels
 warnings.filterwarnings(
     action = 'ignore',
@@ -45,9 +41,7 @@ parser.add_argument('--experiment_name', type=str,
 
 ### Customize Feature Extraction
 
-# High-level approach (How to collect and aggregate texture featuress)
-parser.add_argument('--approach', type=str, choices = ['full', 'each', 'patch'], default = 'full',
-                    help = 'Approach for feature extraction(full = Full Image, each = Each Contiguous ROI, patch = Extract a Patch')
+# Feature aggregation
 parser.add_argument('--aggregate_across_slices', type=str2bool, default = True,
                     help = 'Average texture features across slices, or report for one slice only')
 
@@ -64,12 +58,6 @@ parser.add_argument('--fractal_features', type=str2bool, default = True,
                     help = 'Extract fractal dimension features - (y/n)')
 parser.add_argument('--fourier_features', type=str2bool, default = True,
                     help = 'Extract Fourier power spectrum features - (y/n)')
-
-# Approach-specific parameters
-parser.add_argument('--minimum_nonzero', type=int, default = 100,
-                    help = 'Minimum number of nonzero-pixels in ROI mask to be considered (only for each method)')
-parser.add_argument('--patch_size', type=int, default = 16,
-                    help = 'Size of patch ROI to analyze (only for patch method)')
 
 ### Customize Preprocessing Pipeline
 

@@ -62,13 +62,14 @@ class FeatureExtractor:
             parameterMatrix = sitk.GetArrayFromImage(resampledImage)
             parameterMatrixCoordinates = np.nonzero(sitk.GetArrayFromImage(resampledMask))
             
-            # Discretize gray levels
+            # Discretize gray levels to fixed bin width/size
             if self.args["discretize"] == "fixedwidth":
                 processedImage = radiomics.imageoperations.binImage(parameterMatrix,
                                                                       parameterMatrixCoordinates,
                                                                       binWidth = self.args["bin_width"]
                                                                       )[0]
-                
+             
+            # Discretize gray levels to fixed bin number/count
             elif self.args["discretize"] == "fixedcount":
                 processedImage = radiomics.imageoperations.binImage(parameterMatrix,
                                                                       parameterMatrixCoordinates,
@@ -124,7 +125,7 @@ class FeatureExtractor:
             print("Unequal number of images and masks. Preprocessing failed.")
             return
         
-        # Compiled resample and preprocessed images and masks across
+        # Compiled resampled and preprocessed images and masks across multiple slices
         resampledImages = []
         processedImages = []
         filteredImages_ = []
@@ -173,7 +174,6 @@ class FeatureExtractor:
         if self.args["fourier_features"]:
             fourier_features, fourier_labels = pyfeats.fps(imgArray, maskArray)
             features.update(dict(zip(fourier_labels, fourier_features)))
-            
             
         return features
     
@@ -293,82 +293,3 @@ class FeatureExtractor:
         resampledMask = resampler.Execute(mask)
         
         return resampledImage, resampledMask
-    
-    # Get ROIs from an image and mask based on the feature extraction approach
-    # Full Image vs. Patch ROI vs. Each Contiguous ROI
-    # Will return a list of 1 or greater ROI
-    # def getROIs (self, image, mask):
-        
-    #     if args["approach"] = "full":
-    #         boundingBox = radiomics.imageoperations.checkMask(image, mask)[0]
-    #         croppedImage, croppedMask = radiomics.imageoperations.cropToTumorMask(image, mask, boundingBox)
-            
-    #         return [croppedImage, croppedMask]
-        
-    #     if args.approach == "each":
-            
-    #         maskArray = sitk.GetArrayFromImage(mask)
-            
-    #         # Get contours of all ROIs
-    #         contours = cv2.findContours(maskArray, 
-    #                                     cv2.RETR_EXTERNAL, 
-    #                                     cv2.CHAIN_APPROX_NONE)[0]
-            
-    #         # Get features from each ROI
-    #         roiFeatures = []
-    #         for contour in contours:
-    #             boundingBox = [np.min(contour[:, :, 0]), 
-    #                            np.max(contour[:, :, 0]), 
-    #                            np.min(contour[:, :, 1]), 
-    #                            np.max(contour[:, :, 1])]
-                
-    #             # If ROI is large enough, get features
-    #             if np.count_nonzero(maskArray[boundingBox[2]:boundingBox[3], boundingBox[0]:boundingBox[1]]) >= minimum_nonzero:
-    #                 croppedImage = image[boundingBox[0]:boundingBox[1], boundingBox[2]:boundingBox[3]]
-    #                 croppedMask = mask[boundingBox[0]:boundingBox[1], boundingBox[2]:boundingBox[3]]
-    #                 roiFeatures.append(getTextureFeatures(croppedImage, croppedMask, 
-    #                                                       radiomic_features, 
-    #                                                       laws_features, 
-    #                                                       radiomicsExtractor))
-            
-    #         # Average features from all ROIs
-    #         averageROIFeatures = {}
-    #         if len(roiFeatures) > 0:
-    #             for feat in roiFeatures[0].keys():
-    #                 averageROIFeatures[feat] = np.mean([float(featureDict[feat]) for featureDict in roiFeatures])
-            
-    #     if args.approach == "patch":
-            
-    #         maskArray = sitk.GetArrayFromImage(mask)
-            
-    #         # Get indices of nonzero pixels in mask
-    #         nonzero = np.array(np.nonzero(maskArray)).T
-            
-    #         # Randomize order so we don't prefer pixels closer to origin
-    #         np.random.shuffle(nonzero)
-           
-    #         # Iterate till we find patch
-    #         for point in nonzero:
-                
-    #             # Check if patch is in bounds
-    #             if point[0] < maskArray.shape[0] - patch_size and point[1] < maskArray.shape[1] - patch_size:
-                    
-    #                 # Check if patch is all tumor pixels
-    #                 if np.sum(maskArray[point[0]:point[0] + patch_size, point[1]:point[1] + patch_size]) == patch_size ** 2:
-                        
-    #                     imagePatch = image[point[1]:point[1] + patch_size, point[0]:point[0] + patch_size]
-    #                     maskPatch = mask[point[1]:point[1] + patch_size, point[0]:point[0] + patch_size]
-
-    #                     return getTextureFeatures(imagePatch, maskPatch, 
-    #                                               radiomic_features, 
-    #                                               laws_features, 
-    #                                               radiomicsExtractor)
-            
-    #         # Return empty dictionary if no patch is found
-    #         return {}
-        
-    
-# # Crop image and mask to tumor region
-# boundingBox = radiomics.imageoperations.checkMask(resampledImage, resampledMask)[0]
-# resampledImage, resampledMask = radiomics.imageoperations.cropToTumorMask(resampledImage, resampledMask, boundingBox)
-### GET ROIS

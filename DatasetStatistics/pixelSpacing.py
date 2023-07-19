@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 
-# Getting average pixel spacing
+# Getting average pixel spacing and slice thickness for dataset
 dataPath = r"D:\BAP1\Data\TextureAnalysisFinal"
 reader = sitk.ImageFileReader()
 spacing = []
@@ -26,20 +26,20 @@ for case in os.listdir(dataPath):
 xSpacing = [s[0] for s in spacing]  
 ySpacing = [s[1] for s in spacing]   
 
-avgSpacing = [np.mean(xSpacing), np.mean(ySpacing)]
-print("Average Spacing:", avgSpacing)
+print("Average Spacing:", [np.mean(xSpacing), np.mean(ySpacing)])
 print("Average Slice Thickness:", np.mean(sliceThickness))
 
 plt.hist(xSpacing)
-plt.axvline(avgSpacing[0], color = "red", ls="--")
-plt.title("Distribution of Pixel Spacing")
+plt.axvline(np.mean(xSpacing), color = "red", ls="--")
+plt.title("Distribution of Pixel Spacing (x-axis)")
 plt.xlabel("Pixel Spacing (mm)")
 plt.show()
 
-# plt.hist(ySpacing)
-# plt.axvline(avgSpacing[1], color = "red", ls="--")
-# plt.title("Distribution of y-axis Spacing")
-# plt.show()
+plt.hist(ySpacing)
+plt.axvline(np.mean(ySpacing), color = "red", ls="--")
+plt.title("Distribution of Pixel Spacing (y-axis)")
+plt.xlabel("Pixel Spacing (mm)")
+plt.show()
 
 plt.hist(sliceThickness)
 plt.axvline(np.mean(sliceThickness), color = "red", ls="--")

@@ -7,4 +7,4 @@ There are issues installing Nyxus via pip. Also run: conda install -c conda-forg
 
 ## To run feature extraction script: 
 Modify config file with experiment-specific parameters. \
-Run: python FeatureExtraction.py --config configs/name_of_config.txt
+Run: python extract.py --config configs/name_of_config.txt

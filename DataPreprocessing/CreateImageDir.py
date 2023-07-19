@@ -1,8 +1,15 @@
+"""
+This script creates a directory of images from the raw data that is configured for
+mesothelioma segmentation and texture feature extraction.
+
+The original, thorax-segmented, and preprocessed images are copied to the new directory.
+"""
+
 import os
 import shutil
 import pandas as pd
 
-# Set working director to data folder
+# Get path to data folder
 basePath = "/home/abbasshaikh/BAP1Project/Data/"
 diseaseLaterality = pd.read_excel(os.path.join(basePath, "BAP1 data curation.xlsx"), 
                                     sheet_name = "Disease laterality - Feng")
@@ -21,7 +28,7 @@ for iCase in range(len(diseaseLaterality)):
         casePath = os.path.join(basePath, outFolder, diseaseLaterality.Case[iCase] + "_" + diseaseLaterality.Laterality[iCase])
         os.makedirs(casePath, exist_ok = True)
 
-        # Save original images
+        # Get paths to original images
         repName = diseaseLaterality["Middle slice"][iCase]
         sliceNum = int(repName[-4:])
 
@@ -32,6 +39,7 @@ for iCase in range(len(diseaseLaterality)):
         supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], supName)
         infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], infName)
 
+        # Copy original images
         outPath = os.path.join(casePath, "OriginalImgs")
         os.mkdir(outPath)
 
@@ -39,7 +47,7 @@ for iCase in range(len(diseaseLaterality)):
         shutil.copy(supImage, outPath)
         shutil.copy(infImage, outPath)
 
-        # Save segmented thorax images
+        # Get paths to segmented thorax images
         repNameThx = "Thx" + repName[3:]
         supNameThx = "Thx" + supName[3:]
         infNameThx = "Thx" + infName[3:]
@@ -48,6 +56,7 @@ for iCase in range(len(diseaseLaterality)):
         supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax", supNameThx)
         infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "SegmentedThorax", infNameThx)
 
+        # Copy segmented thorax images
         outPath = os.path.join(casePath, "SegmentedThorax")
         os.mkdir(outPath)
 
@@ -55,11 +64,12 @@ for iCase in range(len(diseaseLaterality)):
         shutil.copy(supImage, outPath)
         shutil.copy(infImage, outPath)
 
-        # Save preprocessed images
+        # Get paths to preprocessed images
         repImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", repNameThx + ".tif")
         supImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", supNameThx + ".tif")
         infImage = os.path.join(imagesPath, diseaseLaterality.Case[iCase], "PreprocessedImgs", infNameThx + ".tif")
 
+        # Copy preprocessed images
         outPath = os.path.join(casePath, "PreprocessedImgs")
         os.mkdir(outPath)
 

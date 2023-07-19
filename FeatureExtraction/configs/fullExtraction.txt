@@ -1,7 +1,6 @@
 data_path = D:\BAP1\Data\TextureAnalysisFinal
 save_path = D:\BAP1\Experiments
 experiment_name = Python-FullImage_preprocessingFiltersFractalFourier
-approach = full
 aggregate_across_slices = True
 intensity_features = True
 radiomic_features = True

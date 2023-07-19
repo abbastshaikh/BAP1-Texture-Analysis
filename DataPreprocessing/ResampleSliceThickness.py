@@ -1,3 +1,11 @@
+"""
+This script resamples the original and segmented DICOM images to a uniform slice thickness.
+
+The new position of the representative slice is redetermined using the original and new slice
+thickness and the original position of the representative slice. The represenative slice and
+the superior and inferior slices are then saved as DICOM files.
+"""
+
 import os
 import pandas as pd
 import SimpleITK as sitk
@@ -6,7 +14,7 @@ import numpy as np
 
 NEW_SLICE_THICKNESS = 3.
 
-# Set working director to data folder
+# Get path to data folder
 basePath = "/home/abbasshaikh/BAP1Project/Data/"
 diseaseLaterality = pd.read_excel(os.path.join(basePath, "BAP1 data curation.xlsx"), 
                                     sheet_name = "Disease laterality - Feng")
@@ -72,7 +80,7 @@ for iCase in range(len(diseaseLaterality)):
             # Infer new slice location
             newSliceLocation = dicom.SliceLocation + NEW_SLICE_THICKNESS * newSliceIndex 
 
-            # Save original slices
+            # Get paths to save new slices
             if imagePaths[0][-11:-8] == "Img":
                 outPath = os.path.join(casePath, "OriginalImgs_Resampled")
                 os.makedirs(outPath, exist_ok = True)
@@ -80,20 +88,25 @@ for iCase in range(len(diseaseLaterality)):
                 repName = "Img001_" + str(((newSliceIndex + 1))).zfill(4)
                 supName = "Img001_" + str(((newSliceIndex + 1) - 1)).zfill(4)
                 infName = "Img001_" + str(((newSliceIndex + 1) + 1)).zfill(4)
+                
             elif imagePaths[0][-11:-8] == "Thx":
-                outPath = os.path.join(casePath, "ResampledImgs_3mm")
+                outPath = os.path.join(casePath, "SegmentedThorax_Resampled")
                 os.makedirs(outPath, exist_ok = True)
 
                 repName = "Thx001_" + str(((newSliceIndex + 1))).zfill(4)
                 supName = "Thx001_" + str(((newSliceIndex + 1) - 1)).zfill(4)
                 infName = "Thx001_" + str(((newSliceIndex + 1) + 1)).zfill(4)
-
-            dicom.SliceThickness = NEW_SLICE_THICKNESS
-
+                
+            #  Get representative and neighboring slices as numpy arrays
             repSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex])).astype(np.int16)
             supSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex - 1])).astype(np.int16)
             infSlice = (sitk.GetArrayFromImage(resampledVolume[:, :, newSliceIndex + 1])).astype(np.int16)
             
+
+            # Modify DICOM header information with updated slice thickness 
+            # and location for each slice and save to a new DICOM file.
+            dicom.SliceThickness = NEW_SLICE_THICKNESS
+
             dicom.SliceLocation = newSliceLocation
             dicom.ImagePositionPatient = [dicom.ImagePositionPatient[0], dicom.ImagePositionPatient[1], -newSliceLocation]
             dicom.PixelData = repSlice.tobytes()
