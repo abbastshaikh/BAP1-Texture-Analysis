@@ -1,7 +1,8 @@
 data_path = D:\BAP1\Data\TextureAnalysisFinal
 save_path = D:\BAP1\Experiments
-experiment_name = Python-FullImage_preprocessingFiltersFractalFourier
+experiment_name = Python-FullImage_FullFeatureExtraction
 aggregate_across_slices = True
+shape_features = True
 intensity_features = True
 radiomic_features = True
 radiomic_feature_classes = [glcm, gldm, glrlm, glszm, ngtdm, gldzm, ngldm]

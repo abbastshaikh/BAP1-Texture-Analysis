@@ -46,6 +46,8 @@ parser.add_argument('--aggregate_across_slices', type=str2bool, default = True,
                     help = 'Average texture features across slices, or report for one slice only')
 
 # Specifying features to extract
+parser.add_argument('--shape_features', type=str2bool, default = True,
+                    help = 'Extract shape features - (y/n)')
 parser.add_argument('--intensity_features', type=str2bool, default = True,
                     help = 'Extract intensity features - (y/n)')
 parser.add_argument('--radiomic_features', type=str2bool, default = True,
