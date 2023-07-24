@@ -211,7 +211,7 @@ for caseIdx in range(len(cases)):
     extractedFeatures = featureExtractor.extractFeatures(images, labels)
     extractedErodedFeatures = featureExtractor.extractFeatures(images, erodedLabels)
     
-    if extractedFeatures and allErodedFeatures:
+    if extractedFeatures and extractedErodedFeatures:
         allFeatures.append(extractedFeatures)
         allErodedFeatures.append(extractedErodedFeatures)
         processedCases.append(caseName)
