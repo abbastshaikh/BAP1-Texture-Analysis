@@ -11,10 +11,11 @@ from numpy import nan
 import math
 
 # Set value cutoffs
-RNoA_cutoff = 3
-bias_cutoff = 0.5
-MRF_cutoff = 2
-SDRF_cutoff = 1
+RNoA_cutoff = 9
+bias_cutoff = 1.5
+MRF_cutoff_1 = 1.1
+MRF_cutoff_2 = 0.9
+SDRF_cutoff = 0.5
 
 # Intialize list of dropped features
 dropped_MRF_features = []
@@ -22,10 +23,11 @@ dropped_SDRF_features =[]
 dropped_RNoA_features = []
 dropped_bias_features =[]
 
-# Load in feature
-features = pd.read_csv(r"/Users/ilanadeutsch/Desktop/features.csv")
-erodedFeatures = pd.read_csv(r"/Users/ilanadeutsch/Desktop/featuresEroded.csv")
+# Load in features
+features = pd.read_csv(r"/Users/ilanadeutsch/Desktop/features.csv").iloc[:,1:]
+erodedFeatures = pd.read_csv(r"/Users/ilanadeutsch/Desktop/featuresEroded.csv").iloc[:,1:]
 
+# Set variables
 results = []
 all_feature_vals =[]
 
@@ -45,6 +47,10 @@ for count, feature in enumerate(features):
 
     # Find mean feature val
     mean_feature_val = mean(all_feature_vals)
+
+     # Skip features with mean feature val = 0
+    if mean_feature_val == 0:
+        continue
 
     # Calculate norm bias
     norm_bias = abs(mean(bias) / mean_feature_val)
@@ -68,14 +74,8 @@ df = pd.DataFrame(results)
 for featNum, feature in enumerate(df[0]):
     if df.iloc[featNum,1] > RNoA_cutoff:
         dropped_RNoA_features.append(feature)  
-    elif df.iloc[featNum,2] > bias_cutoff:
+    if df.iloc[featNum,2] > bias_cutoff:
         dropped_bias_features.append(feature)
-
-# Remove features below specified cutoff values
-df = df[abs(df[1]) < RNoA_cutoff]
-df = df[abs(df[2]) < bias_cutoff]
-
-overlap = [feature for feature in dropped_RNoA_features if feature in dropped_bias_features]
 
 # Intialize variables
 results = []
@@ -86,6 +86,12 @@ for count, feature in enumerate(features):
     # Calculate the MFR for each feature
     ratio = features[str(feature)]/erodedFeatures[str(feature)]
     ratio = [x for x in ratio if not(math.isnan(x))]
+
+    # Skip features where all ratios are undefined
+    if len(ratio) == 0:
+        continue
+
+    # Calculate mean feature ratio
     MFR = mean(ratio)
 
     # Calculate SDFR
@@ -99,9 +105,11 @@ df = pd.DataFrame(results)
 
 # Add features below cutoff values to a list
 for featNum, feature in enumerate(df[0]):
-    if df.iloc[featNum,1] > MRF_cutoff:
+    if df.iloc[featNum,1] > MRF_cutoff_1:
         dropped_MRF_features.append(feature)  
-    elif df.iloc[featNum,2] > SDRF_cutoff:
+    if df.iloc[featNum,1] < MRF_cutoff_2:
+        dropped_MRF_features.append(feature)
+    if df.iloc[featNum,2] > SDRF_cutoff:
         dropped_SDRF_features.append(feature)
 
 # Display dropped features
@@ -122,6 +130,7 @@ print("\n")
 all_results = []
 counted = []
 info_list =[]
+occurances =[]
 
 # Add all removed feature lists together
 all_results.extend(dropped_MRF_features)
@@ -133,8 +142,13 @@ all_results.extend(dropped_bias_features)
 for element in all_results:
     if element not in counted:
         counted.append(element)
-        print(f"{element}: {all_results.count(element)}")
+        occurances.append([element, all_results.count(element)])
         info_list.append(f"{element}: {all_results.count(element)}")
 
 # Print total number of removed features
 print(f"\nTotal features removed: {len(info_list)}")
+
+# Export feature list
+to_drop = pd.DataFrame(occurances)
+to_drop= to_drop.sort_values(by = 1)
+to_drop.to_excel(r"/Users/ilanadeutsch/Desktop/occurances.xlsx")
