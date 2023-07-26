@@ -11,11 +11,11 @@ from numpy import nan
 import math
 
 # Set value cutoffs
-RNoA_cutoff = 9
-bias_cutoff = 1.5
-MRF_cutoff_1 = 1.1
-MRF_cutoff_2 = 0.9
-SDRF_cutoff = 0.5
+RNoA_cutoff = 3.47
+bias_cutoff = 0.81
+MRF_cutoff_1 = 1.56
+MRF_cutoff_2 = 0.56
+SDRF_cutoff = 2.50
 
 # Intialize list of dropped features
 dropped_MRF_features = []
@@ -78,7 +78,7 @@ for featNum, feature in enumerate(df[0]):
         dropped_bias_features.append(feature)
 
 # Intialize variables
-results = []
+results2 = []
 
 # Loop through all features
 for count, feature in enumerate(features):
@@ -98,18 +98,18 @@ for count, feature in enumerate(features):
     SDFR = math.sqrt(sum(([(x - MFR)**2 for x in ratio]))/len(ratio))
 
     # Append results to list
-    results.append([feature, MFR, SDFR])
+    results2.append([feature, MFR, SDFR])
 
 # Save results as df
-df = pd.DataFrame(results)
+df2 = pd.DataFrame(results2)
 
 # Add features below cutoff values to a list
-for featNum, feature in enumerate(df[0]):
-    if df.iloc[featNum,1] > MRF_cutoff_1:
+for featNum, feature in enumerate(df2[0]):
+    if df2.iloc[featNum,1] > MRF_cutoff_1:
         dropped_MRF_features.append(feature)  
-    if df.iloc[featNum,1] < MRF_cutoff_2:
+    if df2.iloc[featNum,1] < MRF_cutoff_2:
         dropped_MRF_features.append(feature)
-    if df.iloc[featNum,2] > SDRF_cutoff:
+    if df2.iloc[featNum,2] > SDRF_cutoff:
         dropped_SDRF_features.append(feature)
 
 # Display dropped features
@@ -128,9 +128,7 @@ print("\n")
 
 # Initialize lists
 all_results = []
-counted = []
-info_list =[]
-occurances =[]
+new_results = []
 
 # Add all removed feature lists together
 all_results.extend(dropped_MRF_features)
@@ -138,17 +136,44 @@ all_results.extend(dropped_SDRF_features)
 all_results.extend(dropped_RNoA_features)
 all_results.extend(dropped_bias_features)
 
-# Count how many times each feature appears in composite list
-for element in all_results:
-    if element not in counted:
-        counted.append(element)
-        occurances.append([element, all_results.count(element)])
-        info_list.append(f"{element}: {all_results.count(element)}")
+# Create new list without duplicate results
+[new_results.append(x) for x in all_results if x not in new_results]
 
-# Print total number of removed features
-print(f"\nTotal features removed: {len(info_list)}")
+# Create a dataframe with appropriate headers
+df = pd.DataFrame(columns= ["Feature", "Bias", "nRoA", "MRF", "SDRF", "Bias_val", "nRoA_val", "MRF_val", "SDRF_val"])
 
-# Export feature list
-to_drop = pd.DataFrame(occurances)
-to_drop= to_drop.sort_values(by = 1)
-to_drop.to_excel(r"/Users/ilanadeutsch/Desktop/occurances.xlsx")
+# Add unique dropped features to first column
+df["Feature"] = new_results
+
+# Add a 1 for if the metric dropped the result, and a 0 for if it did not
+for featNum, feature in enumerate(df["Feature"]):
+    if feature in dropped_bias_features:
+        df.iloc[featNum,1] = 1
+    else:
+        df.iloc[featNum,1] = 0
+    if feature in dropped_RNoA_features:
+        df.iloc[featNum,2] = 1
+    else:
+        df.iloc[featNum,2] = 0
+    if feature in dropped_MRF_features:
+        df.iloc[featNum,3] = 1
+    else:
+        df.iloc[featNum,4] = 0
+    if feature in dropped_SDRF_features:
+       df.iloc[featNum,4] = 1
+    else:
+        df.iloc[featNum,4] = 0
+
+    # Add metric values to df
+    for entry in results:
+        if entry[0] == feature:
+            df.iloc[featNum, 5] = entry[2]
+            df.iloc[featNum, 6] = entry[1]
+
+    for entry in results2:
+        if entry[0] == feature:
+            df.iloc[featNum, 7] = entry[1]
+            df.iloc[featNum, 8] = entry[2]
+
+# Export df
+df.to_excel(r"/Users/ilanadeutsch/Desktop/feature_drop_occurences.xlsx")
