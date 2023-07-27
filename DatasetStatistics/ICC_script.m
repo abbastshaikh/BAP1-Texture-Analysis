@@ -1,6 +1,6 @@
 % Import features
-features = readtable("/Users/ilanadeutsch/Desktop/features.csv");
-erodedFeatures = readtable("/Users/ilanadeutsch/Desktop/featuresEroded.csv");
+features = readtable("/Users/ilanadeutsch/Desktop/features.csv","VariableNamingRule","preserve");
+erodedFeatures = readtable("/Users/ilanadeutsch/Desktop/featuresEroded.csv","VariableNamingRule","preserve");
 
 iccArray = [];
 
@@ -14,13 +14,13 @@ for i = 2:size(features,2)
     m = [tmpFeatVals tmpErodeVals];
 
     % Calculate ICC values
-    iccArray = ICC(m, 'A-1', 0.05);
+    iccVal = ICC_function(m, 'A-1', 0.05);
     iccArray = [iccArray; convertCharsToStrings(tmpFeatName) iccVal];
 
 end
 
 % Find icc values above a certain cutoff
-iccArray(find(str2double(iccArray(:,2)) > 0.75))
+%iccArray(find(str2double(iccArray(:,2)) > 0.75))
 
 % Export values
 writematrix(iccArray,"/Users/ilanadeutsch/Desktop/ICC.csv")
