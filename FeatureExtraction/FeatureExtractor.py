@@ -1,22 +1,9 @@
-import configargparse
 import radiomics
 import pyfeats
 import SimpleITK as sitk
 import numpy as np
 from nyxus import Nyxus
 
-# For reading booleans from text file
-# https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise configargparse.ArgumentTypeError('Boolean value expected.')
-    
 class FeatureExtractor:
     
     def __init__ (self, args_dict):
@@ -47,7 +34,7 @@ class FeatureExtractor:
             self.nyxusExtractor = Nyxus(["*ALL*"])
             
     # Preprocess single SimpleITK image and segmentation mask and return resampled image 
-    # and mask and processed image after applying discretization and preprocessing filters
+    # and mask and processed images after applying filters
     def preprocess (self, image, mask):
         
         # Match mask metadata to image metadata
@@ -56,11 +43,10 @@ class FeatureExtractor:
         # Resample to standardized pixel spacing
         if self.args["pixel_spacing"]:
             resampledImage, resampledMask = FeatureExtractor.resampleToSpacing(image, mask, self.args["pixel_spacing"])
-                
-        # Apply morphological operations to mask
-        if self.args["mask_opening"]:
-            resampledMask = sitk.BinaryMorphologicalOpening(resampledMask)
-            
+        else:
+            resampledImage = image
+            resampledMask = mask
+                  
         # Apply preprocessing image filters
         filteredImages = []
         filterNames = []

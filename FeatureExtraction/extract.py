@@ -4,7 +4,7 @@ import yaml
 import configargparse
 import radiomics
 import SimpleITK as sitk
-from util import FeatureExtractor, str2bool
+from FeatureExtractor import FeatureExtractor
 import warnings
 
 # Silence warnings for PyRadiomics and PyFeats
@@ -26,6 +26,18 @@ warnings.filterwarnings(
     module = 'pyfeats',
     message = 'divide by zero encountered in log10'
 )
+
+# For reading booleans from config file
+# https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise configargparse.ArgumentTypeError('Boolean value expected.')
 
 ### Getting experiment configuration
 parser = configargparse.ArgumentParser()
@@ -76,8 +88,6 @@ parser.add_argument('--corrected_contours', type=str2bool, default = False,
                     help = 'Use radiologist corrected tumor contours rather than raw output of segmentation CNN')
 parser.add_argument('--threshold', type=float, default = 0.01,
                     help = 'Threshold for segmentation probability map')
-parser.add_argument('--mask_opening', type=str2bool, default = False,
-                    help = 'Apply opening morphological operation to mask')
 
 # Image standardization parameters (resampling and discretization)
 parser.add_argument('--pixel_spacing', type=float, default = 0.,

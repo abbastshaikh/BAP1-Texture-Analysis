@@ -25,8 +25,8 @@ dependencies:
   - brotli-bin=1.0.9=h2bbff1b_7
   - brotlipy=0.7.0=py311h2bbff1b_1002
   - bzip2=1.0.8=he774522_0
-  - ca-certificates=2023.05.30=haa95532_0
-  - certifi=2023.5.7=py311haa95532_0
+  - ca-certificates=2023.7.22=h56e8100_0
+  - certifi=2023.7.22=pyhd8ed1ab_0
   - cffi=1.15.1=py311h2bbff1b_3
   - cfitsio=3.470=h2bbff1b_7
   - chardet=4.0.0=py311haa95532_1003
@@ -66,6 +66,7 @@ dependencies:
   - idna=3.4=py311haa95532_0
   - imagecodecs=2021.8.26=py311h94f204c_2
   - imagesize=1.4.1=py311haa95532_0
+  - imbalanced-learn=0.11.0=pyhd8ed1ab_0
   - importlib-metadata=6.0.0=py311haa95532_0
   - importlib_metadata=6.0.0=hd3eb1b0_0
   - inflection=0.5.1=py311haa95532_0
@@ -141,7 +142,7 @@ dependencies:
   - nyxus=0.6.0=py311h7063b26_4
   - openjpeg=2.5.0=ha2aaf27_2
   - openpyxl=3.0.10=py311h2bbff1b_0
-  - openssl=1.1.1u=h2bbff1b_0
+  - openssl=1.1.1u=hcfcfb64_0
   - packaging=23.0=py311haa95532_0
   - pandas=1.5.3=py311heda8569_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
@@ -260,14 +261,18 @@ dependencies:
   - zstd=1.5.5=hd43e919_0
   - pip:
       - boruta==0.3
+      - category-encoders==2.6.1
       - contourpy==1.1.0
       - docopt==0.6.2
       - fonttools==4.40.0
       - imageio==2.31.1
       - mahotas==1.4.13
+      - mrmr-selection==0.2.8
       - networkx==3.1
       - opencv-python==4.7.0.72
+      - patsy==0.5.3
       - pillow==9.5.0
+      - polars==0.18.8
       - pydicom==2.4.1
       - pyfeats==1.0.1
       - pykwalify==1.8.0
@@ -278,5 +283,7 @@ dependencies:
       - scikit-image==0.21.0
       - scipy==1.11.0
       - simpleitk==2.2.1
+      - statsmodels==0.14.0
       - tifffile==2023.4.12
+      - tqdm==4.65.0
 prefix: C:\Users\mathw\anaconda3\envs\TextureAnalysis

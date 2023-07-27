@@ -4,10 +4,8 @@ import yaml
 import configargparse
 import radiomics
 import SimpleITK as sitk
-import numpy as np
-from util import FeatureExtractor, str2bool
+from FeatureExtractor import FeatureExtractor
 import warnings
-from scipy.stats import pearsonr
 
 # Silence warnings for PyRadiomics and PyFeats
 logger = radiomics.logging.getLogger("radiomics")
@@ -29,6 +27,18 @@ warnings.filterwarnings(
     message = 'divide by zero encountered in log10'
 )
 
+# For reading booleans from config file
+# https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise configargparse.ArgumentTypeError('Boolean value expected.')
+
 ### Getting experiment configuration
 parser = configargparse.ArgumentParser()
 parser.add_argument('--config', is_config_file=True)
@@ -48,6 +58,8 @@ parser.add_argument('--aggregate_across_slices', type=str2bool, default = True,
                     help = 'Average texture features across slices, or report for one slice only')
 
 # Specifying features to extract
+parser.add_argument('--shape_features', type=str2bool, default = True,
+                    help = 'Extract shape features - (y/n)')
 parser.add_argument('--intensity_features', type=str2bool, default = True,
                     help = 'Extract intensity features - (y/n)')
 parser.add_argument('--radiomic_features', type=str2bool, default = True,
@@ -76,8 +88,6 @@ parser.add_argument('--corrected_contours', type=str2bool, default = False,
                     help = 'Use radiologist corrected tumor contours rather than raw output of segmentation CNN')
 parser.add_argument('--threshold', type=float, default = 0.01,
                     help = 'Threshold for segmentation probability map')
-parser.add_argument('--mask_opening', type=str2bool, default = False,
-                    help = 'Apply opening morphological operation to mask')
 
 # Image standardization parameters (resampling and discretization)
 parser.add_argument('--pixel_spacing', type=float, default = 0.,
@@ -211,37 +221,14 @@ for caseIdx in range(len(cases)):
     extractedFeatures = featureExtractor.extractFeatures(images, labels)
     extractedErodedFeatures = featureExtractor.extractFeatures(images, erodedLabels)
     
-    if extractedFeatures and allErodedFeatures:
+    if extractedFeatures and extractedErodedFeatures:
         allFeatures.append(extractedFeatures)
         allErodedFeatures.append(extractedErodedFeatures)
         processedCases.append(caseName)
     
 # Create and export dataframe output
-allFeatures = pd.DataFrame.from_dict(allFeatures, orient = 'columns')
-allErodedFeatures = pd.DataFrame.from_dict(allErodedFeatures, orient = 'columns')
+allFeatures = pd.DataFrame.from_dict(allFeatures, orient = 'columns').insert(0, 'Case', processedCases)
+allErodedFeatures = pd.DataFrame.from_dict(allErodedFeatures, orient = 'columns').insert(0, 'Case', processedCases)
 
-allFeatures.insert(0, 'Case', processedCases)
-allErodedFeatures.insert(0, 'Case', processedCases)
-
-# Function to normalize to zero mean and unit variance (numpy)
-normalize = lambda x: (x - x.mean()) / x.std()
-
-# Get correlation coefficients and save to dataframe
-featureCorrelation = pd.DataFrame(columns = ["feature", "pearson", "p-value"])
-for feat in allFeatures.columns:
-    
-    featureValues = allFeatures[feat]
-    erodedFeatureValues = allErodedFeatures[feat]
-    
-    # Drop cases with null values, normalize remaining feature values
-    dropCases = featureValues.isnull() | erodedFeatureValues.isnull()
-    featureValues = normalize(np.array(featureValues[~dropCases]))
-    erodedFeatureValues = normalize(np.array(erodedFeatureValues[~dropCases]))
-    
-    # Calculate and save correlation values
-    pearson = pearsonr(featureValues, erodedFeatureValues)
-    featureCorrelation.loc[len(featureCorrelation)] = [feat, pearson.statistic, pearson.pvalue]
-    
 allFeatures.to_csv(os.path.join(experimentPath, "featuresNonEroded.csv"), index = False)
 allErodedFeatures.to_csv(os.path.join(experimentPath, "featuresEroded.csv"), index = False)
-featureCorrelation.to_csv(os.path.join(experimentPath, "featureCorrelation.csv"), index = False)
