@@ -43,14 +43,20 @@ expirementPath = r"D:/BAP1/Experiments/Python-FullImage_fullFeatureExtraction"
 
 # Load extracted features and labels
 features = pd.read_csv(os.path.join(expirementPath, "features.csv"))
-labels = pd.read_csv(os.path.join(dataPath, "BAP1DataCuration.csv"))[["Case", "Somatic BAP1 mutation status"]]
+labels = pd.read_csv(os.path.join(dataPath, "BAP1DataCuration.csv"))[["Case", "IHC BAP1 Status"]]
 
 # Convert labels (in Yes/No format) to binary format
-labels.rename(columns = {"Somatic BAP1 mutation status":"BAP1"}, inplace = True)
-labels["BAP1"] = labels["BAP1"].str.lower().replace(to_replace = ['yes', 'no'], value = [1, 0])
+labels.rename(columns = {"IHC BAP1 Status":"BAP1"}, inplace = True)
 
-# Merge labels and features (will remove labels if we don't have features extracted)
-features = pd.merge(features, labels, on = "Case", how = "left")
+# Drop cases with null values or not done
+labels = labels.dropna(axis = 0, how = 'any')
+labels = labels[labels["BAP1"].str.lower() != "not done"]
+
+# Convert labels to binary format
+labels["BAP1"] = labels["BAP1"].str.lower().replace(to_replace = ['retained', 'loss', 'lost'], value = [0, 1, 1])
+
+# Merge labels and features (will remove features if we don't have labels)
+features = pd.merge(features, labels, on = "Case", how = "right")
 
 # Drop 'Case' column and any columns with null values
 featuresNum = features.dropna(axis = 1, how = 'any').drop("Case", axis = 1)
@@ -122,15 +128,15 @@ def feature_selection (X, y, model):
 #                                 n_estimators = 500,
 #                                 criterion = 'entropy',
 #                                 random_state = 42)
-# model = GradientBoostingClassifier(n_estimators = 200,
-#                                    random_state = 42)
-# model = XGBClassifier(n_jobs = -1,
-#                       n_estimators = 100,
-#                       # learning_rate = 0.01,
-#                       # grow_policy = 'lossguide',
-#                       random_state = 42)
+# model = GradientBoostingClassifier(n_estimators = 500,
+#                                     random_state = 42)
+model = XGBClassifier(n_jobs = -1,
+                      # n_estimators = 100,
+                      # learning_rate = 0.01,
+                      # grow_policy = 'lossguide',
+                      random_state = 42)
 # model = DecisionTreeClassifier(max_depth = 5) 
-model = SVC(probability = True)
+# model = SVC(probability = True)
 # model = LogisticRegression()
 # model = LinearDiscriminantAnalysis()
 # model = MultinomialNB()

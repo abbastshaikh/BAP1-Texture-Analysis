@@ -109,6 +109,12 @@ parser.add_argument('--wavelet', type=str, nargs = "+", default = "bior1.1",
 parser.add_argument('--LBP_radius', type=float, nargs = "+", default = 1.,
                     help = 'Radius of Local Binary Pattern filter, can input multiple.')
 
+# Parameters for getting images from eroded masks
+parser.add_argument('--erode_mask', type=str2bool, default = False,
+                    help = 'Erode mask prior to extracting features?')
+parser.add_argument('--erosion_radius', type=int, default = 1,
+                    help = 'Kernel radius for erosion.')
+
 args = parser.parse_args()
 args_dict = vars(args)
 
@@ -204,6 +210,12 @@ for caseIdx in range(len(cases)):
         # Otherwise we binarize at specified threshold
         else:
             label = sitk.BinaryThreshold(label, lowerThreshold = args.threshold)
+            
+        # Get eroded masks
+        if args.erode_mask:
+            erodeFilter = sitk.BinaryErodeImageFilter()
+            erodeFilter.SetKernelRadius(args.erosion_radius)
+            label = erodeFilter.Execute(label)
         
         # Add to list of images/segmentations
         images.append(image)

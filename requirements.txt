@@ -14,3 +14,6 @@ seaborn==0.12.2
 boruta==0.3
 mrmr_selection==0.2.8
 imbalanced-learn==0.11.0
+xgboost==1.7.6
+mirp @ git+https://github.com/oncoray/mirp.git
+pingouin == 0.5.3
