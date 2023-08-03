@@ -1,4 +1,6 @@
 import os
+os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
+
 import pandas as pd
 import yaml
 import configargparse
@@ -110,10 +112,18 @@ parser.add_argument('--LBP_radius', type=float, nargs = "+", default = 1.,
                     help = 'Radius of Local Binary Pattern filter, can input multiple.')
 
 # Parameters for getting images from eroded masks
-parser.add_argument('--erode_mask', type=str2bool, default = False,
-                    help = 'Erode mask prior to extracting features?')
-parser.add_argument('--erosion_radius', type=int, default = 1,
-                    help = 'Kernel radius for erosion.')
+parser.add_argument('--adapt_size', type=str2bool, default = False,
+                    help = 'Erode or dilate mask prior to extracting features?')
+parser.add_argument('--adapt_range', type=int, nargs = 2, default = [-2, 2],
+                    help = 'Range or radius within which to randomly erode/dilate mask')
+
+parser.add_argument('--rotate', type=str2bool, default = False,
+                    help = 'Rotate image and mask prior to extracting features?')
+parser.add_argument('--rotate_range', type=float, nargs = 2, default = [-15, 15],
+                    help = 'Range of angles (degrees) within which to randomly rotate the image and mask')
+
+parser.add_argument('--randomize_contours', type=str2bool, default = False,
+                    help = 'Randomize maks contours?')
 
 args = parser.parse_args()
 args_dict = vars(args)
@@ -130,106 +140,109 @@ featureExtractor = FeatureExtractor(args_dict)
 # Create dataframe to store texture features
 allFeatures = []
 processedCases = []
-    
+
 # Iterate over cases (each dir = case)
 cases = os.listdir(args.data_path)
 for caseIdx in range(len(cases)):
     
-    caseName = cases[caseIdx].rsplit("_", 1)[0]
-    print("Processing Case " + str(caseIdx + 1) + "/" + str(len(cases)) + ": ", caseName)
+    try:
     
-    # Setting correct data paths based on experiment configuration
-    if args.windowing:
-        imgDir = "PreprocessedImgs"
-    elif args.segmented_thorax:
-        imgDir = "SegmentedThorax"
-    else:
-        imgDir = "OriginalImgs"
-    
-    if args.corrected_contours:
-        labelsDir = "Masks"
-    else:
-        labelsDir = "prob_maps"
+        caseName = cases[caseIdx].rsplit("_", 1)[0]
+        print("Processing Case " + str(caseIdx + 1) + "/" + str(len(cases)) + ": ", caseName)
         
-    if args.resampled_slice_thickness:
-        imgDir = imgDir + "_Resampled"
-        labelsDir = labelsDir + "_Resampled"
-    
-    # Get paths to images and labels
-    imgsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], imgDir)))
-    labelsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], labelsDir)))
-    
-    # Make sure we have the same number of images and segmenations
-    assert len(imgsPath) == len(labelsPath)
-    
-    # Limit paths to only one slice if not aggregating across all slices
-    if not args.aggregate_across_slices:
-        imgsPath = [imgsPath[1]]
-        labelsPath = [labelsPath[1]]
-    
-    # List to store all slices of images and segmentations for current case
-    images = []
-    labels = []
-    
-    # Iterate over each slice per case
-    for idx in range(len(imgsPath)):
-            
-        imgPath = os.path.join(args.data_path, cases[caseIdx], imgDir, imgsPath[idx])
-        labelPath = os.path.join(args.data_path, cases[caseIdx], labelsDir, labelsPath[idx])
-        
-        # Read in image
-        image = sitk.ReadImage(imgPath)
-        
-        # Remove third dimension of slice if it exists
-        if len(image.GetSize()) == 3:
-            image = image[:, :, 0]
-        
-        # Windowed images are TIFs, which does not preserve image metadata (e.g. spacing)
-        # We load DICOM image and transfer image metadata parameters here
+        # Setting correct data paths based on experiment configuration
         if args.windowing:
-            if args.resampled_slice_thickness:
-                dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax_Resampled", 
-                                                    imgsPath[idx].split(".")[0]))[:, :, 0] # Dicom has the same name as the TIF without the file extension
-            else:
-                dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax", 
-                                                    imgsPath[idx].split(".")[0]))[:, :, 0]
-            
-            image.CopyInformation(dicom)
-        
-        # Handling edge case, original image size doesn't match
-        if caseName == "29_18000101_CT_AXL_W":
-            image = image[:, -512:]
-        
-        # Read in segmentation
-        label = sitk.ReadImage(labelPath)
-        
-        # Masks are stored as 0 as negative, 255 as positive, so we rescale to 0 and 1
-        if args.corrected_contours:
-            label = sitk.RescaleIntensity(label, outputMinimum = 0, outputMaximum = 1)
-            label[0, 0] = 0
-        # Otherwise we binarize at specified threshold
+            imgDir = "PreprocessedImgs"
+        elif args.segmented_thorax:
+            imgDir = "SegmentedThorax"
         else:
-            label = sitk.BinaryThreshold(label, lowerThreshold = args.threshold)
+            imgDir = "OriginalImgs"
+        
+        if args.corrected_contours:
+            labelsDir = "Masks"
+        else:
+            labelsDir = "prob_maps"
             
-        # Get eroded masks
-        if args.erode_mask:
-            erodeFilter = sitk.BinaryErodeImageFilter()
-            erodeFilter.SetKernelRadius(args.erosion_radius)
-            label = erodeFilter.Execute(label)
+        if args.resampled_slice_thickness:
+            imgDir = imgDir + "_Resampled"
+            labelsDir = labelsDir + "_Resampled"
         
-        # Add to list of images/segmentations
-        images.append(image)
-        labels.append(label)
+        # Get paths to images and labels
+        imgsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], imgDir)))
+        labelsPath = sorted(os.listdir(os.path.join(args.data_path, cases[caseIdx], labelsDir)))
         
-    # Extract features, save if successfull
-    extractedFeatures = featureExtractor.extractFeatures(images, labels)
+        # Make sure we have the same number of images and segmenations
+        assert len(imgsPath) == len(labelsPath)
+        
+        # Limit paths to only one slice if not aggregating across all slices
+        if not args.aggregate_across_slices:
+            imgsPath = [imgsPath[1]]
+            labelsPath = [labelsPath[1]]
+        
+        # List to store all slices of images and segmentations for current case
+        images = []
+        labels = []
+        
+        # Iterate over each slice per case
+        for idx in range(len(imgsPath)):
+                
+            imgPath = os.path.join(args.data_path, cases[caseIdx], imgDir, imgsPath[idx])
+            labelPath = os.path.join(args.data_path, cases[caseIdx], labelsDir, labelsPath[idx])
+            
+            # Read in image
+            image = sitk.ReadImage(imgPath)
+            
+            # Remove third dimension of slice if it exists
+            if len(image.GetSize()) == 3:
+                image = image[:, :, 0]
+            
+            # Windowed images are TIFs, which does not preserve image metadata (e.g. spacing)
+            # We load DICOM image and transfer image metadata parameters here
+            if args.windowing:
+                if args.resampled_slice_thickness:
+                    dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax_Resampled", 
+                                                        imgsPath[idx].split(".")[0]))[:, :, 0] # Dicom has the same name as the TIF without the file extension
+                else:
+                    dicom = sitk.ReadImage(os.path.join(args.data_path, cases[caseIdx], "SegmentedThorax", 
+                                                        imgsPath[idx].split(".")[0]))[:, :, 0]
+                
+                image.CopyInformation(dicom)
+            
+            # Handling edge case, original image size doesn't match
+            if caseName == "29_18000101_CT_AXL_W":
+                image = image[:, -512:]
+            
+            # Read in segmentation
+            label = sitk.ReadImage(labelPath)
+            
+            # Masks are stored as 0 as negative, 255 as positive, so we rescale to 0 and 1
+            if args.corrected_contours:
+                label = sitk.RescaleIntensity(label, outputMinimum = 0, outputMaximum = 1)
+                label[0, 0] = 0
+            # Otherwise we binarize at specified threshold
+            else:
+                label = sitk.BinaryThreshold(label, lowerThreshold = args.threshold)
+                
+            # Add to list of images/segmentations
+            images.append(image)
+            labels.append(label)
+            
+        # Extract features, save if successfull
+        extractedFeatures = featureExtractor.extractFeatures(images, labels)
+        
+        if extractedFeatures:
+            allFeatures.append(extractedFeatures)
+            processedCases.append(caseName)
     
-    if extractedFeatures:
-        allFeatures.append(extractedFeatures)
-        processedCases.append(caseName)
-    
+    # Handling keyboard interrupts during feature extraction
+    except KeyboardInterrupt:
+        print("Stopping Feature Extraction.")
+        break
+
 # Create and export dataframe output
 allFeatures = pd.DataFrame.from_dict(allFeatures, orient = 'columns')
 allFeatures.insert(0, 'Case', processedCases)
 
-allFeatures.to_csv(os.path.join(experimentPath, "features.csv"), index = False)
+outCSV = os.path.join(experimentPath, "features.csv")
+print("Saving output to:", outCSV)
+allFeatures.to_csv(outCSV, index = False)

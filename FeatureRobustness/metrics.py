@@ -112,6 +112,7 @@ def nROA (A, B):
     # Return normalized bias
     return (CI[1] - CI[0]) / abs(meanValue)
 
+# Get ICC of given type between features
 def ICC (A, B, iccType = "ICC1"):
     
     # Drop cases where either feature value is null
@@ -131,6 +132,16 @@ def ICC (A, B, iccType = "ICC1"):
     iccCI = icc.iloc[icc.index[icc["Type"] == iccType][0]]["CI95%"]
     
     return iccVal, iccCI
+
+def pearson (A, B):
+    
+    # Drop cases where either feature value is null
+    toDrop = np.isnan(A) | np.isnan(B)
+    A = np.array(A[~ toDrop])
+    B = np.array(B[~ toDrop])
+    
+    result = scipy.stats.pearsonr(A, B)
+    return result.statistic, result.pvalue
     
     
     

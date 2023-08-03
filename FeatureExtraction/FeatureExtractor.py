@@ -3,6 +3,8 @@ import pyfeats
 import SimpleITK as sitk
 import numpy as np
 from nyxus import Nyxus
+from perturbation import erode, dilate, rotate_image_mask, randomize_roi_contours
+import random
 
 class FeatureExtractor:
     
@@ -46,6 +48,9 @@ class FeatureExtractor:
         else:
             resampledImage = image
             resampledMask = mask
+            
+        # Apply image perturbations
+        resampledImage, resampledMask = self.perturb(resampledImage, resampledMask)
                   
         # Apply preprocessing image filters
         filteredImages = []
@@ -80,6 +85,31 @@ class FeatureExtractor:
                 filterNames.append("LBP_radius=" + str(radius))
         
         return resampledImage, filteredImages, filterNames, resampledMask
+    
+    # Apply image perturbations (erosion, dilation, rotation, contour randomisation) to image and mask
+    def perturb (self, image, mask):
+        
+        # Randomly erode/dilate mask in specified range
+        if self.args["adapt_size"]:
+            radius = random.randint(self.args["adapt_range"][0], self.args["adapt_range"][1])
+            
+            if radius > 0:
+                mask = dilate(mask, radius)
+            
+            elif radius < 0:
+                mask = erode(mask, abs(radius))
+            
+        # Randomize contours of mask
+        if self.args["randomize_contours"]:
+            mask = randomize_roi_contours(image, mask)
+            
+        # Randomly rotate image and mask in specified range
+        if self.args["rotate"]:
+            angle = random.uniform(self.args["rotate_range"][0], self.args["rotate_range"][1])
+            image, mask = rotate_image_mask(image, mask, angle)
+            
+        return image, mask
+            
     
     # Preprocess list of image and segmentation mask slices
     def preprocessMultiple (self, images, masks):
