@@ -9,6 +9,11 @@ This folder contains code for performing feature extraction on CT images and ass
 - perturbation.py: Code for image perturbations used in assessing feature robustness.
 - configs/: Text files used to specify experiment configurations.
 
+### DataPreprocessing
+This folder contains miscellaneous scripts to preprocess data before feature extraction and classification.
+- createImageDir.py: Script to create initial data directory configured for feature extraction experiments.
+- resampleSliceThickness.py: Script to generate axial CT images with resampled slice thickness to standardize future analysis.
+
 ## Setup
 
 ### Package Installation:

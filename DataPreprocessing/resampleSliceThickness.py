@@ -1,9 +1,13 @@
 """
-This script resamples the original and segmented DICOM images to a uniform slice thickness.
+This script resamples the original and thorax-segmented DICOM images to a 
+uniform slice thickness.
 
-The new position of the representative slice is redetermined using the original and new slice
-thickness and the original position of the representative slice. The represenative slice and
-the superior and inferior slices are then saved as DICOM files.
+The new position of the representative slice is inferred using the original 
+and new slice thickness and the original position of the representative slice. 
+The represenative slice and the superior and inferior slices are then saved as 
+DICOM files.
+
+Written by Abbas Shaikh, Summer 2023
 """
 
 import os

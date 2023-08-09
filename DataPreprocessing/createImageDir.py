@@ -1,8 +1,9 @@
 """
-This script creates a directory of images from the raw data that is configured for
-mesothelioma segmentation and texture feature extraction.
+This script creates a directory storing original, thorax-segmented, and 
+preprocessed images from the raw HIRO data that is configured specifically for 
+running feature extraction and texture analysis.
 
-The original, thorax-segmented, and preprocessed images are copied to the new directory.
+Written by Abbas Shaikh, Summer 2023
 """
 
 import os
