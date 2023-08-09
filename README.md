@@ -2,6 +2,8 @@
 
 ## Organization
 
+- requirements.txt: Configuration file listing packages used for this project. Please update if you install additional packages.
+
 ### FeatureExtraction
 This folder contains code for performing feature extraction on CT images and associated segmentations.
 - extract.py: Script to call in order to run a feature extraction experiment.
@@ -15,11 +17,9 @@ This folder contains miscellaneous scripts to preprocess data before feature ext
 - resampleSliceThickness.py: Script to generate axial CT images with resampled slice thickness to standardize future analysis.
 
 ## Setup
-
-### Package Installation:
-Create a conda environment with Python 3.11: conda create -n nameOfEnvironment python=3.11 \
-Install packages: pip install -r requirements.txt \
-There are issues installing Nyxus via pip. Also run: conda install -c conda-forge nyxus=0.6.0
+- Create a conda environment with Python 3.11
+- Install packages: pip install -r requirements.txt
+- There are issues installing Nyxus via pip. Also run: conda install -c conda-forge nyxus=0.6.0
 
 ## Running Feature Extraction
 

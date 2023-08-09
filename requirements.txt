@@ -1,19 +1,23 @@
-pandas==1.5.3
+boruta==0.3
+configargparse==1.4
+imbalanced-learn==0.11.0
+kneed==0.8.5
+matplotlib==3.7.1
+mrmr_selection==0.2.8
 numpy==1.25.0
-scikit-learn==1.2.2
 opencv-python==4.7.0.72
+openpyxl==3.0.10
+pandas==1.5.3
+pingouin==0.5.3
+pydicom==2.4.1
 pyfeats==1.0.1
 pyradiomics==3.0.1
-scipy==1.11.0
-simpleitk==2.2.1
-configargparse==1.4
-pydicom==2.4.1
 pyyaml==6.0
-openpyxl==3.0.10
+scikit-learn==1.2.2
+scikit-image==0.21.0
+scipy==1.11.0
 seaborn==0.12.2
-boruta==0.3
-mrmr_selection==0.2.8
-imbalanced-learn==0.11.0
+simpleitk==2.2.1
+statsmodels==0.14.0
+tabulate==0.9.0
 xgboost==1.7.6
-mirp @ git+https://github.com/oncoray/mirp.git
-pingouin == 0.5.3
