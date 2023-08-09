@@ -17,15 +17,15 @@ MRF_cutoff_1 = 1.56
 MRF_cutoff_2 = 0.56
 SDRF_cutoff = 2.50
 
+# Load in features
+features = pd.read_csv(r"/Users/ilanadeutsch/Desktop/features.csv").iloc[:,1:]
+erodedFeatures = pd.read_csv(r"/Users/ilanadeutsch/Desktop/featuresEroded.csv").iloc[:,1:]
+
 # Intialize list of dropped features
 dropped_MRF_features = []
 dropped_SDRF_features =[]
 dropped_RNoA_features = []
 dropped_bias_features =[]
-
-# Load in features
-features = pd.read_csv(r"/Users/ilanadeutsch/Desktop/features.csv").iloc[:,1:]
-erodedFeatures = pd.read_csv(r"/Users/ilanadeutsch/Desktop/featuresEroded.csv").iloc[:,1:]
 
 # Set variables
 results = []
@@ -169,11 +169,10 @@ for featNum, feature in enumerate(df["Feature"]):
         if entry[0] == feature:
             df.iloc[featNum, 5] = entry[2]
             df.iloc[featNum, 6] = entry[1]
-
     for entry in results2:
         if entry[0] == feature:
             df.iloc[featNum, 7] = entry[1]
             df.iloc[featNum, 8] = entry[2]
 
 # Export df
-df.to_excel(r"/Users/ilanadeutsch/Desktop/feature_drop_occurences.xlsx")
+df.to_excel(r"/Users/ilanadeutsch/Desktop/feature_drop_occurences.xlsx", header = ["Feature", "Bias","nRoA","MFR","SDFR","Bias Vals","nRoA Vals","MFR Vals","SDFR Vals"])
