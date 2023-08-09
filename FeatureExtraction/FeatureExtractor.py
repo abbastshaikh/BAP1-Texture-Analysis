@@ -1,3 +1,26 @@
+"""
+This file contains the Feature Extractor used to perform radiomic feature
+extraction for the BAP1 project. This Feature Extractor accepts as input a 
+dictionary specifying the configurations for the particular experiment. 
+
+The feature extractor is not specific to the BAP1 data or task, but rather 
+can be used universally given any CT images and ROI segmentations. The feature 
+extractor performs all steps of the feature extraction process including:
+    Preprocessing
+    - Resampling
+    - Image Filtering (Laplacian of Gaussian, Wavelet, Local Binary Pattern)
+    - Image Perturbations
+    - Discretization
+    Feature Extraction
+    - Intensity Feature Extraction
+    - Texture Feature Extraction
+        - GLCM, GLDM, GLRLM, GLSZM, GLDZM, NGLDM, NGTDM
+        - Laws, Fractal, Fourier
+    - IBSI-compliant Feature Aggregation
+
+Written by Abbas Shaikh, Summer 2023
+"""
+
 import radiomics
 import pyfeats
 import SimpleITK as sitk
@@ -89,6 +112,11 @@ class FeatureExtractor:
     # Apply image perturbations (erosion, dilation, rotation, contour randomisation) to image and mask
     def perturb (self, image, mask):
         
+        # Randomly rotate image and mask in specified range
+        if self.args["rotate"]:
+            angle = random.uniform(self.args["rotate_range"][0], self.args["rotate_range"][1])
+            image, mask = rotate_image_mask(image, mask, angle)
+        
         # Randomly erode/dilate mask in specified range
         if self.args["adapt_size"]:
             radius = random.randint(self.args["adapt_range"][0], self.args["adapt_range"][1])
@@ -102,12 +130,7 @@ class FeatureExtractor:
         # Randomize contours of mask
         if self.args["randomize_contours"]:
             mask = randomize_roi_contours(image, mask)
-            
-        # Randomly rotate image and mask in specified range
-        if self.args["rotate"]:
-            angle = random.uniform(self.args["rotate_range"][0], self.args["rotate_range"][1])
-            image, mask = rotate_image_mask(image, mask, angle)
-            
+               
         return image, mask
             
     

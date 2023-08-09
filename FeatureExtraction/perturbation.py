@@ -1,3 +1,11 @@
+"""
+This file contains functions that perform image perturbations that were used 
+to assess feature robustness. Perturbations include rotation, erosion, dilation, 
+and contour randomization.
+
+Written by Abbas Shaikh, Summer 2023
+"""
+
 import numpy as np
 import SimpleITK as sitk
 from skimage.segmentation import slic
@@ -12,8 +20,8 @@ warnings.filterwarnings(
     message = 'Applying `local_binary_pattern` to floating-point images may give unexpected results when small numerical differences between adjacent pixels are present. It is recommended to use this function with images of integer dtype'
 )
 
+# Erode binary mask (SimpleITK image) by specified radius
 def erode (mask, radius):
-    """Erode binary mask by specified radius"""
     
     erodeFilter = sitk.BinaryErodeImageFilter()
     erodeFilter.SetKernelRadius(radius)
@@ -21,8 +29,8 @@ def erode (mask, radius):
     
     return eroded
 
+# Dilate binary mask (SimpleITK image) by specified radius
 def dilate (mask, radius):
-    """Dilate binary mask by specified radius"""
     
     dilateFilter = sitk.BinaryDilateImageFilter()
     dilateFilter.SetKernelRadius(radius)
@@ -30,8 +38,8 @@ def dilate (mask, radius):
     
     return dilated
 
+# Rotate image and mask (SimpleITK images) by specified angle (degrees)
 def rotate_image_mask (image, mask, angle):
-    """Rotate image and mask by specified angle (degrees)"""
     
     imageArray = sitk.GetArrayFromImage(image)
     maskArray = sitk.GetArrayFromImage(mask).astype(bool)
@@ -56,6 +64,7 @@ def rotate_image_mask (image, mask, angle):
 ### https://github.com/oncoray/mirp/tree/master
 ### Zwanenburg A, Leger S, Agolli L, Pilz K, Troost EG, Richter C, Löck S. Assessing robustness of radiomic features by image perturbation. Scientific reports. 2019 Jan 24;9(1):614.
 
+# Accepts SimpleITK images as input
 def randomize_roi_contours(image, mask):
     """Use SLIC to randomise the roi based on supervoxels"""
 
@@ -117,7 +126,7 @@ def get_supervoxels(image, mask):
     # Slic constants - number of segments
     # min_n_voxels = np.max([20.0, 500.0 / np.prod(image.GetSpacing())])
     # n_segments = int(np.prod(image.GetSize()) / min_n_voxels)
-    n_segments = 10000
+    n_segments = 5000
 
     # Convert to float with range [0.0, 1.0]
     if img_voxel_grid.dtype not in ["float", "float64"]:

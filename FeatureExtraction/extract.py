@@ -1,3 +1,34 @@
+"""
+This script runs a radiomic feature extraction for the BAP1 CT Images. The 
+script is configured to run on data stored in a specific hierarchical format:
+    Data Folder (i.e. TextureAnalysisFinal):
+    --> Case
+        --> Original Images (DICOM)
+        --> Resampled Original Images (DICOM)
+        --> Segmented Thorax Images (DICOM)
+        --> Resampled Segmented Thorax Images (DICOM)
+        --> Preprocessed Images (TIF)
+        --> Resampled Preprocessed Images (TIF)
+        --> Segmentation Probability Maps (TIF)
+        --> Resampled Probability Maps (TIF)
+        --> Resampled Segmentation Masks (TIF)
+        
+All the practical parts of feature extraction such as reading and manipulating 
+files are here, whereas the specifics of the actual feature extraction process
+are included in FeatureExtractor.py.
+
+INPUT: Each stage of feature extraction (including which images to use, which 
+preprocessing steps to take, which features to extract, etc.) is configurable 
+using the configuration arguments specified below, to avoid manually adjusting 
+code for each experiment. The configurations can be specified in a txt file, 
+as in the configs/ folder.
+
+OUTPUT: The script will output a CSV tabulating each input case as a row and 
+each feature extracted as a column.
+
+Written by Abbas Shaikh, Summer 2023
+"""
+
 import os
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 
@@ -47,33 +78,33 @@ parser.add_argument('--config', is_config_file=True)
 
 ### Paths to read data and write experiment outputs
 parser.add_argument('--data_path', type=str,
-                    help = 'Path to folder containing images')
+                    help = 'Path to folder containing images and masks.')
 parser.add_argument('--save_path', type=str,
-                    help = 'Path to experiment outputs folder')
+                    help = 'Path to save feature extraction output.')
 parser.add_argument('--experiment_name', type=str,
-                    help = 'Name of experiment (will be title of experiment folder)')
+                    help = 'Name of experiment (will be the title of experiment folder).')
 
 ### Customize Feature Extraction
 
 # Feature aggregation
 parser.add_argument('--aggregate_across_slices', type=str2bool, default = True,
-                    help = 'Average texture features across slices, or report for one slice only')
+                    help = 'Average texture features across slices, or report for one (represenative) slice only')
 
 # Specifying features to extract
 parser.add_argument('--shape_features', type=str2bool, default = True,
-                    help = 'Extract shape features - (y/n)')
+                    help = 'Extract shape features?')
 parser.add_argument('--intensity_features', type=str2bool, default = True,
-                    help = 'Extract intensity features - (y/n)')
+                    help = 'Extract intensity features?')
 parser.add_argument('--radiomic_features', type=str2bool, default = True,
-                    help = 'Extract radiomic texture features - (y/n)')
+                    help = 'Extract radiomic texture features?')
 parser.add_argument('--radiomic_feature_classes', type=str, nargs = "+", default = ['glcm', 'gldm', 'glrlm', 'glszm', 'ngtdm', 'gldzm', 'ngldm'],
                     help = 'Texture features to extract via radiomics feature extractor')
 parser.add_argument('--laws_features', type=str2bool, default = True,
-                    help = 'Extract Laws features - (y/n)')
+                    help = 'Extract Laws features?')
 parser.add_argument('--fractal_features', type=str2bool, default = True,
-                    help = 'Extract fractal dimension features - (y/n)')
+                    help = 'Extract fractal dimension features?')
 parser.add_argument('--fourier_features', type=str2bool, default = True,
-                    help = 'Extract Fourier power spectrum features - (y/n)')
+                    help = 'Extract Fourier power spectrum features?')
 
 ### Customize Preprocessing Pipeline
 
@@ -83,7 +114,7 @@ parser.add_argument('--segmented_thorax', type=str2bool, default = True,
 parser.add_argument('--windowing', type=str2bool, default = False,
                     help = 'Use thorax-segmented CT scans after preprocessing with windowing operation applied to enhance contrast')
 parser.add_argument('--resampled_slice_thickness', type=str2bool, default = True,
-                    help = 'Uses images and masks after resampling to standardized slice thickness (3mm)')
+                    help = 'Use images and masks after resampling to standardized slice thickness (3mm)')
 
 # Specifying which tumor segmentations to use
 parser.add_argument('--corrected_contours', type=str2bool, default = False,
@@ -112,15 +143,15 @@ parser.add_argument('--LBP_radius', type=float, nargs = "+", default = 1.,
                     help = 'Radius of Local Binary Pattern filter, can input multiple.')
 
 # Parameters for getting images from eroded masks
-parser.add_argument('--adapt_size', type=str2bool, default = False,
-                    help = 'Erode or dilate mask prior to extracting features?')
-parser.add_argument('--adapt_range', type=int, nargs = 2, default = [-2, 2],
-                    help = 'Range or radius within which to randomly erode/dilate mask')
-
 parser.add_argument('--rotate', type=str2bool, default = False,
                     help = 'Rotate image and mask prior to extracting features?')
 parser.add_argument('--rotate_range', type=float, nargs = 2, default = [-15, 15],
                     help = 'Range of angles (degrees) within which to randomly rotate the image and mask')
+
+parser.add_argument('--adapt_size', type=str2bool, default = False,
+                    help = 'Perform volume adaptation, i.e. erode or dilate mask prior to extracting features?')
+parser.add_argument('--adapt_range', type=int, nargs = 2, default = [-2, 2],
+                    help = 'Range or radius within which to randomly erode/dilate mask')
 
 parser.add_argument('--randomize_contours', type=str2bool, default = False,
                     help = 'Randomize maks contours?')
