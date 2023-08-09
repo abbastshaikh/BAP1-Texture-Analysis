@@ -103,7 +103,7 @@ class FeatureExtractor:
         # Local Binary Pattern filter
         if "LBP" in self.args["preprocessing_filters"]:
             for radius in self.args["LBP_radius"]:
-                LBPImage = next(radiomics.imageoperations.getLBP2DImage(resampledImage, resampledMask, lbp2DRadius = radius))[0]
+                LBPImage = next(radiomics.imageoperations.getLBP2DImage(sitk.Cast(resampledImage, sitk.sitkInt16), resampledMask, lbp2DRadius = radius))[0]
                 filteredImages.append(LBPImage)
                 filterNames.append("LBP_radius=" + str(radius))
         

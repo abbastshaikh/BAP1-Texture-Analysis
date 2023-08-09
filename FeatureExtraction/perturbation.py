@@ -11,14 +11,6 @@ import SimpleITK as sitk
 from skimage.segmentation import slic
 from scipy.ndimage import binary_closing
 from skimage.transform import rotate
-import warnings
-
-warnings.filterwarnings(
-    action = 'ignore',
-    category = UserWarning,
-    module = 'skimage',
-    message = 'Applying `local_binary_pattern` to floating-point images may give unexpected results when small numerical differences between adjacent pixels are present. It is recommended to use this function with images of integer dtype'
-)
 
 # Erode binary mask (SimpleITK image) by specified radius
 def erode (mask, radius):
@@ -67,13 +59,13 @@ def rotate_image_mask (image, mask, angle):
 # Accepts SimpleITK images as input
 def randomize_roi_contours(image, mask):
     """Use SLIC to randomise the roi based on supervoxels"""
-
+    
     # Get supervoxels
     img_segments = get_supervoxels(image, mask)
 
     # Determine overlap of supervoxels with contour
     overlap_indices, overlap_fract, overlap_size = get_supervoxel_overlap(mask, img_segments)
-
+    
     # Set the highest overlap to 1.0 to ensure selection of at least 1 supervoxel
     overlap_fract[np.argmax(overlap_fract)] = 1.0
 
@@ -95,22 +87,22 @@ def randomize_roi_contours(image, mask):
     # Apply binary closing to close gaps
     roi_vox = binary_closing(input=roi_vox).astype(int)
     
-    newMask = sitk.GetImageFromArray(roi_vox)
-    newMask.CopyInformation(mask)
+    new_mask = sitk.GetImageFromArray(roi_vox)
+    new_mask.CopyInformation(mask)
 
-    return newMask
+    return new_mask
 
 def get_supervoxels(image, mask):
     """Extracts supervoxels from an image"""
     
     # Get image object grid
     img_voxel_grid = sitk.GetArrayFromImage(image)
-    maskArray = sitk.GetArrayFromImage(mask).astype(bool)
+    mask_array = sitk.GetArrayFromImage(mask).astype(bool)
 
     # Get grey level thresholds
     g_range = np.empty((2))
-    g_range[0] = np.min(img_voxel_grid[maskArray])
-    g_range[1] = np.max(img_voxel_grid[maskArray])
+    g_range[0] = np.min(img_voxel_grid[mask_array])
+    g_range[1] = np.max(img_voxel_grid[mask_array])
 
     # Add 10% range outside of the grey level range
     exp_range = 0.1 * (g_range[1] - g_range[0])
@@ -145,17 +137,17 @@ def get_supervoxels(image, mask):
 
     # Release img_voxel_grid
     del img_voxel_grid
-    del maskArray
+    del mask_array
 
     return img_segments
 
 def get_supervoxel_overlap(mask, img_segments):
     """Determines overlap of supervoxels with other the region of interest"""
 
-    maskArray = sitk.GetArrayFromImage(mask).astype(bool)
+    mask_array = sitk.GetArrayFromImage(mask).astype(bool)
 
     # Check segments overlapping with the current contour
-    overlap_segment_labels, overlap_size = np.unique(np.multiply(img_segments, maskArray), return_counts=True)
+    overlap_segment_labels, overlap_size = np.unique(np.multiply(img_segments, mask_array), return_counts=True)
     
     # Find super voxels with non-zero overlap with the roi
     overlap_size = overlap_size[overlap_segment_labels > 0]
