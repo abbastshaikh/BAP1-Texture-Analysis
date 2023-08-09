@@ -11,10 +11,20 @@ for i = 2:size(features,2)
     tmpFeatName = features.Properties.VariableNames(i);
     tmpFeatVals = features.(tmpFeatName{1});
     tmpErodeVals = erodedFeatures.(tmpFeatName{1});
+
+    % Calculate means
+    meanFeatVal = mean(tmpFeatVals);
+    meanErodeVal = mean(tmpErodeVals);
+
+    % Calculate standard deviations
+    stdFeat = std(tmpFeatVals);
+    stdErode = std(tmpErodeVals);
+
+    % Create m matrix
     m = [tmpFeatVals tmpErodeVals];
 
     % Calculate ICC values
-    iccVal = ICC_function(m, 'A-1', 0.05);
+    iccVal = ICC_function(m, '1-1', 0.05);
     iccArray = [iccArray; convertCharsToStrings(tmpFeatName) iccVal];
 
 end
