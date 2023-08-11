@@ -16,6 +16,16 @@ This folder contains miscellaneous scripts to preprocess data before feature ext
 - createImageDir.py: Script to create initial data directory configured for feature extraction experiments.
 - resampleSliceThickness.py: Script to generate axial CT images with resampled slice thickness to standardize future analysis.
 
+### DatasetStatistics
+This folder contains scripts to gather information about the BAP1 dataset and create related plots
+- BAP1_datasetStatistics.ipynb: Notebook that gathers and organizes demographic and CT-related information about the BAP1 dataset.
+    - variousplots.py: Script version of BAP1_datasetStatistics with some changes (author: @shenmena)
+- correlation_heatmap.ipynb: Notebook to generate heatmaps and clustered heatmaps of correlated features.
+- mutationAndIHCStatus.py: Script to generate a bar chart displaying NGS and IHC results together.
+
+### Figures + Findings
+This folder contains summative figures and tables related to the BAP1 dataset.
+
 ## Setup
 - Create a conda environment with Python 3.11
 - Install packages: pip install -r requirements.txt
