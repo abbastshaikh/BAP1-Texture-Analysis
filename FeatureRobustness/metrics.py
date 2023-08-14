@@ -1,3 +1,22 @@
+"""
+This file contains functions for computing various metrics of agreement used
+to evaluate feature robustness.
+
+Metrics include:
+    Mean of Feature Ratios (MFR)
+    Comparison MFR (CMFR)
+    Standard Deviation of Feature Ratios (SDFR)
+    Comparison SDFR (CSDFR)
+    Concordance Correlation Coefficient (CCC) 
+    Normalized Bias (nBias)
+    Normalized Range of Agreement (nRoA)
+    Intraclass Correlation Coefficient (ICC)
+    Pearson Correlation Coefficient (pearson).
+
+Written by Abbas Shaikh, Summer 2023
+"""
+
+
 import pandas as pd
 import numpy as np
 import scipy.stats
@@ -62,11 +81,6 @@ def CSDFR (A, B):
 # Get Concordance Correlation Coefficient (CCC) between features
 def CCC (A, B):
     
-    # Drop cases where either feature value is null
-    toDrop = np.isnan(A) | np.isnan(B)
-    A = A[~ toDrop]
-    B = B[~ toDrop]
-    
     # Get covariance matrix of features
     covariance = np.cov(A, B)
     
@@ -76,11 +90,6 @@ def CCC (A, B):
         
 # Get normalized bias of features
 def nBias (A, B):
-    
-    # Drop cases where either feature value is null
-    toDrop = np.isnan(A) | np.isnan(B)
-    A = A[~ toDrop]
-    B = B[~ toDrop]
     
     # Get bias
     bias = np.mean(A - B)
@@ -92,12 +101,7 @@ def nBias (A, B):
     return bias / abs(meanValue)
 
 # Get normalized range of agreement (nROA) of features
-def nROA (A, B):
-    
-    # Drop cases where either feature value is null
-    toDrop = np.isnan(A) | np.isnan(B)
-    A = A[~ toDrop]
-    B = B[~ toDrop]
+def nRoA (A, B):
     
     # Get feature differences
     diff = A - B
@@ -115,11 +119,6 @@ def nROA (A, B):
 # Get ICC of given type between features
 def ICC (A, B, iccType = "ICC1"):
     
-    # Drop cases where either feature value is null
-    toDrop = np.isnan(A) | np.isnan(B)
-    A = np.array(A[~ toDrop])
-    B = np.array(B[~ toDrop])
-    
     # Format dataframe for Pingouin package
     data = [[i, "A", A[i]] for i in range(len(A))]
     data.extend([[i, "B", B[i]] for i in range(len(B))])
@@ -134,11 +133,6 @@ def ICC (A, B, iccType = "ICC1"):
     return iccVal, iccCI
 
 def pearson (A, B):
-    
-    # Drop cases where either feature value is null
-    toDrop = np.isnan(A) | np.isnan(B)
-    A = np.array(A[~ toDrop])
-    B = np.array(B[~ toDrop])
     
     result = scipy.stats.pearsonr(A, B)
     return result.statistic, result.pvalue

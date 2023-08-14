@@ -13,6 +13,15 @@ This folder contains code for performing feature extraction on CT images and ass
     - extraction.txt: Configuration for full feature extraction. 
     - perturbation.txt: Configuration for full feature extraction with image perturbations. 
 
+### FeatureRobustness
+This folder contains code for analyzing feature robustness using various metrics of agreement and image perturbations.
+- getRobustnessMetrics.py: Script to generate robustness metrics from features before and after perturbation.
+- getRobustFeatures.py: Script to generate robust feature subsets based on combinations of various metrics.
+- metrics.py: Code for agreement metrics used to assess feature robustness.
+- featureStability.py: Script to perform analysis of stability of feature selection on robust feature sets.
+- plots.py: Various plots for presenting results of feature robustness analysis.
+- Notebooks/: Jupyter notebooks exploring individual methods of analyzing agreement.
+
 ### DatasetStatistics
 This folder contains scripts to gather statistics about the BAP1 dataset and generate relevant plots.
 - BAP1DatasetStatistics.ipynb: Notebook that gathers and organizes demographic and CT-related information about the BAP1 dataset.
