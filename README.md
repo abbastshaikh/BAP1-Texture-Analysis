@@ -13,13 +13,20 @@ This folder contains code for performing feature extraction on CT images and ass
     - extraction.txt: Configuration for full feature extraction. 
     - perturbation.txt: Configuration for full feature extraction with image perturbations. 
 
+### Classification
+This folder contains code to perform BAP1 classification on extracted radiomic features.
+- classify.py: Script to implement final classification pipeline for BAP1 mutation status differentiation.
+- classifyRobust.py: Script to compare classification results on various robust feature sets.
+- util.py: Code for various functions used in classification scripts (loading data, selecting features, etc.)
+- crossValidation.py: Mena's code for cross validation of BAP1 classification pipeline.
+
 ### FeatureRobustness
 This folder contains code for analyzing feature robustness using various metrics of agreement and image perturbations.
 - getRobustnessMetrics.py: Script to generate robustness metrics from features before and after perturbation.
 - getRobustFeatures.py: Script to generate robust feature subsets based on combinations of various metrics.
 - metrics.py: Code for agreement metrics used to assess feature robustness.
 - featureStability.py: Script to perform analysis of stability of feature selection on robust feature sets.
-- plots.py: Various plots for presenting results of feature robustness analysis.
+- plotsAndTests.py: Various plots and statistical tests for presenting results of feature robustness analysis.
 - Notebooks/: Jupyter notebooks exploring individual methods of analyzing agreement.
 
 ### DatasetStatistics
@@ -42,7 +49,5 @@ This folder contains summative figures and tables related to the BAP1 dataset.
 - There are issues installing Nyxus via pip. Also run: conda install -c conda-forge nyxus=0.6.0
 
 ## Running Feature Extraction
-
-### To run feature extraction script: 
 - Modify config file with experiment-specific parameters.
 - Run: python extract.py --config configs/name_of_config.txt
