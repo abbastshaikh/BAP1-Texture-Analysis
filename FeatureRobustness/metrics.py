@@ -125,12 +125,12 @@ def ICC (A, B, iccType = "ICC1"):
     
     data = pd.DataFrame(data, columns = ["Case", "Rater", "Value"])
     
+    # Get ICC statistics
     icc = pingouin.intraclass_corr(data = data, targets = "Case", raters = "Rater", ratings = "Value")
     
+    # Return ICC value
     iccVal = icc.iloc[icc.index[icc["Type"] == iccType][0]]["ICC"]
-    iccCI = icc.iloc[icc.index[icc["Type"] == iccType][0]]["CI95%"]
-    
-    return iccVal, iccCI
+    return iccVal
 
 def pearson (A, B):
     

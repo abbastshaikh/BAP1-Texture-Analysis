@@ -1,8 +1,6 @@
 """
-This script generates various relevant plots to analyzing feature robustness.
-
-NOTE: The script will adapt the plots based on how many perturbation 
-experiments are specified at the beginning.
+This script generates various plots and statistical tests relevant to analyzing 
+feature robustness.
 
 Written by Abbas Shaikh, Summer 2023
 """
@@ -27,7 +25,7 @@ perturbationExperiments = ["D:\BAP1\Experiments\FeatureRobustness\Erosion",
 ### Feature Classes vs. Robustness Metrics ###
 robustFeatures = [pd.read_csv(os.path.join(exp, "robustFeatures.csv")) for exp in perturbationExperiments]
 
-metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC"]
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2"]
 feature_classes = ["firstorder", "glcm", "gldm", "glrlm", "glszm", "GLDZM", "ngtdm", "NGLDM", "LTE", "FDTA", "FPS"] 
 
 fig = plt.figure(figsize = (13, 7))
@@ -60,13 +58,15 @@ plt.ylabel("Proportion of Features Selected", fontsize = 20, labelpad = 15)
 
 plt.legend(["MFR & SDFR", "CMFR & CSDFR", "nRoA & Bias", "CCC", "ICC"], 
             fontsize = 15)
+plt.title("Proportion of Features Selected by Each Metric per Feature Class", fontsize = 30, pad = 30)
+
 plt.show()
 
 
 ### Image Filters vs. Robustness Metrics ###
 robustFeatures = [pd.read_csv(os.path.join(exp, "robustFeatures.csv")) for exp in perturbationExperiments]
 
-metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC"]
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2"]
 filters = ["original", "LoG_sigma=1.0", "LoG_sigma=2.0", "bior1.1-HH", "bior1.1-HL", "bior1.1-LH", "bior1.1-LL", "LBP"]
 fig = plt.figure(figsize = (13, 7))
 
@@ -103,22 +103,27 @@ plt.show()
 
 ### Feature Selection Stability ###
 plotTitles = ["Erosion", "RV Perturbation Chain", "RC Perturbation Chain", "RVC Perturbation Chain"]
+matplotlib.rc('ytick', labelsize=12)
 
 for idx, exp in enumerate(perturbationExperiments):
 
     fig = plt.figure(figsize = (6, 6), dpi = 300)
     
-    featureStability = pd.read_csv(os.path.join(exp, "featureStability.csv"))
+    featureStability = pd.read_excel(os.path.join(exp, "featureStability.xlsx"), sheet_name = "ANOVA")
     numFeatures = featureStability.iloc[:, 0]
     
     for column in featureStability.iloc[:, 1:].columns:
-        plt.plot(numFeatures, featureStability[column], lw = 2, marker='o')
+        if column == "CCC":
+            lw = 4
+        else:
+            lw = 2
+        
+        plt.plot(numFeatures, featureStability[column], lw = lw)
         
     plt.xlabel("Number of Features Selected", fontsize = 15)
     plt.xticks(range(0, 60, 10), fontsize = 12)
     
     plt.ylabel("Feature Selection Stability", fontsize = 15)
-    matplotlib.rc('ytick', labelsize=12)
     plt.ylim([0, 1])
     
     plt.grid(visible = True)
@@ -131,12 +136,12 @@ fig = plt.figure(dpi = 300)
 ax = plt.axes()
 ax.set_facecolor("white")
 
-legend_elements = [matplotlib.lines.Line2D([0], [0], color=(0.2980392156862745, 0.4470588235294118, 0.6901960784313725), marker = 'o', lw=2, label='MFR & SDFR'),
-                   matplotlib.lines.Line2D([0], [0], color=(0.8666666666666667, 0.5176470588235295, 0.3215686274509804), marker = 'o', lw=2, label='CMFR & CSDFR'),
-                   matplotlib.lines.Line2D([0], [0], color=(0.3333333333333333, 0.6588235294117647, 0.40784313725490196), marker = 'o', lw=2, label='nRoA & Bias'),
-                   matplotlib.lines.Line2D([0], [0], color=(0.7686274509803922, 0.3058823529411765, 0.3215686274509804), marker = 'o', lw=2, label='CCC'),
-                   matplotlib.lines.Line2D([0], [0], color=(0.5058823529411764, 0.4470588235294118, 0.7019607843137254), marker = 'o', lw=2, label='ICC'),
-                   matplotlib.lines.Line2D([0], [0], color=(0.5764705882352941, 0.47058823529411764, 0.3764705882352941), marker = 'o', lw=2, label='All Features')
+legend_elements = [matplotlib.lines.Line2D([0], [0], color=(0.2980392156862745, 0.4470588235294118, 0.6901960784313725), lw=2, label='MFR & SDFR'),
+                   matplotlib.lines.Line2D([0], [0], color=(0.8666666666666667, 0.5176470588235295, 0.3215686274509804), lw=2, label='CMFR & CSDFR'),
+                   matplotlib.lines.Line2D([0], [0], color=(0.3333333333333333, 0.6588235294117647, 0.40784313725490196), lw=2, label='nRoA & Bias'),
+                   matplotlib.lines.Line2D([0], [0], color=(0.7686274509803922, 0.3058823529411765, 0.3215686274509804), lw=2, label='CCC'),
+                   matplotlib.lines.Line2D([0], [0], color=(0.5058823529411764, 0.4470588235294118, 0.7019607843137254), lw=2, label='ICC'),
+                   matplotlib.lines.Line2D([0], [0], color=(0.5764705882352941, 0.47058823529411764, 0.3764705882352941), lw=2, label='All Features')
                    ]
 
 plt.legend(handles=legend_elements, loc='center')
@@ -144,7 +149,7 @@ plt.show()
 
 
 ### Number of Features Selected per Metric/Perturbation
-metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC", "All Metrics"]
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2", "All Metrics"]
 data = np.empty((len(perturbationExperiments), len(metrics)), dtype = int)
 
 for i, exp in enumerate(perturbationExperiments):
@@ -158,10 +163,10 @@ ax.set_xticks([])
 ax.xaxis.tick_top() # x axis on top
 ax.xaxis.set_label_position('top')
 ax.set_yticks([])
-# plt.gca().collections[0].set_clim(-50, 200)
 sns.set(font_scale = 2)
 
-sns.heatmap(data, fmt = "",cmap = 'Reds_r',annot = True,linewidths=0.30,ax=ax,yticklabels=["Erosion","RV","RC","RVC"], cbar = False)
+sns.heatmap(data, fmt = "",cmap = 'Reds_r',annot = True,linewidths=0.30,ax=ax, cbar = False,
+            vmin = -50, vmax = data.max())
 
 ax.set_xticklabels(["MFR & SDFR", "CMFR & CSDFR", "nRoA & Bias", "CCC", "ICC","All"], fontsize=15)
 ax.set_yticklabels(["Erosion","RV","RC","RVC"], fontsize=15)
@@ -170,8 +175,67 @@ plt.ylabel('Image Perturbation\n', fontsize=25)
 plt.show()
 
 
+### Dice Coefficient between Metrics
+dice = lambda x, y: 2 * len(set(x).intersection(set(y))) / (len(set(x)) + len(set(y)))
+
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2"]
+data = np.zeros((len(metrics), len(metrics)), dtype = float)
+
+for i, exp in enumerate(perturbationExperiments):
+    robust = pd.read_csv(os.path.join(exp, "robustFeatures.csv"))
+    for j, metric1 in enumerate(metrics):
+        for k, metric2 in enumerate(metrics):
+            data[j, k] = data[j, k] + dice(robust[metric1], robust[metric2]) / len(perturbationExperiments)
+
+fig, ax = plt.subplots(figsize=(12,10), dpi = 300)
+
+ax.set_xticks([])
+ax.xaxis.tick_top() # x axis on top
+ax.xaxis.set_label_position('top')
+ax.set_yticks([])
+sns.set(font_scale = 2)
+
+sns.heatmap(data, fmt = ".3", cmap = 'Reds_r',annot = True,linewidths=0.30,ax=ax, cbar = True,
+            vmin = 0, vmax = 1)
+
+ax.set_xticklabels(["MFR & \n SDFR", "CMFR & \n CSDFR", "nRoA & \n Bias", "CCC", "ICC"], fontsize=20)
+ax.set_yticklabels(["MFR & \n SDFR", "CMFR & \n CSDFR", "nRoA & \n Bias", "CCC", "ICC"], fontsize=20)
+ax.set_title("Mean Dice Coefficient between Robust Features Sets by Metric", fontsize = 30, pad = 30)
+
+plt.show()
+
+
+### Dice Coefficient between Metrics
+data = np.zeros((len(perturbationExperiments), len(perturbationExperiments)), dtype = float)
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2"]
+
+for i, metric in enumerate(metrics):
+    for j, exp1 in enumerate(perturbationExperiments):
+        robust1 = pd.read_csv(os.path.join(exp1, "robustFeatures.csv")) 
+        for k, exp2 in enumerate(perturbationExperiments):
+            robust2 = pd.read_csv(os.path.join(exp2, "robustFeatures.csv")) 
+            data[j, k] = data[j, k] + dice(robust1[metric], robust2[metric]) / len(metrics)
+
+fig, ax = plt.subplots(figsize=(12,10), dpi = 300)
+
+ax.set_xticks([])
+ax.xaxis.tick_top() # x axis on top
+ax.xaxis.set_label_position('top')
+ax.set_yticks([])
+sns.set(font_scale = 2)
+
+sns.heatmap(data, fmt = ".3", cmap = 'Reds_r',annot = True,linewidths=0.30,ax=ax, cbar = True,
+            vmin = 0, vmax = 1)
+
+ax.set_xticklabels(["Erosion","RV","RC","RVC"], fontsize=20)
+ax.set_yticklabels(["Erosion","RV","RC","RVC"], fontsize=20)
+
+fig.tight_layout()
+plt.show()
+
+
 ### Metric vs Feature Class and Image Filters
-metric = "ICC"
+metric = "ICC2"
 robustnessMetrics = pd.read_csv(os.path.join(perturbationExperiments[0], "robustnessMetrics.csv"))
 robustnessMetrics.replace([np.inf, -np.inf], np.nan, inplace=True)
 
@@ -247,3 +311,59 @@ ax[4, 0].imshow(sitk.GetArrayFromImage(perturbedImage), cmap = "gray")
 ax[4, 1].imshow(sitk.GetArrayFromImage(perturbedMask), cmap = "gray")
 
 fig.tight_layout()
+
+### Statistical Tests for Differences in Feature Stability ###
+
+metrics = ["MFR-SDFR", "CMFR-CSDFR", "nRoA-Bias", "CCC", "ICC2"]
+
+byPerturbation = []
+byMetric = [[] for i in range(5)]
+
+for exp in perturbationExperiments:
+    
+    for idx, metric in enumerate(metrics):
+        byMetric[idx].extend(pd.read_excel(os.path.join(exp, "featureStability.xlsx"), sheet_name = "ANOVA")[metric].values)
+        
+    byPerturbation.append(pd.read_excel(os.path.join(exp, "featureStability.xlsx"), sheet_name = "ANOVA")[metrics].values.flatten())
+    
+from scipy.stats import wilcoxon, ranksums, ttest_rel
+
+print("Rank Sum: RVC > Erosion")
+print(ranksums(byPerturbation[3], byPerturbation[0], alternative = 'greater'))
+print()
+
+print("Rank Sum: RVC > RV")
+print(ranksums(byPerturbation[3], byPerturbation[1], alternative = 'greater'))
+print()
+
+print("Rank Sum: RVC > RC")
+print(ranksums(byPerturbation[3], byPerturbation[2], alternative = 'greater'))
+print()
+
+print("Rank Sum: CCC > MFR & SDFR")
+print(ranksums(byMetric[3], byMetric[0], alternative = 'greater'))
+print()
+
+print("Rank Sum: CCC > CMFR & CSDFR")
+print(ranksums(byMetric[3], byMetric[1], alternative = 'greater'))
+print()
+
+print("Rank Sum: CCC > nRoA & Bias")
+print(ranksums(byMetric[3], byMetric[2], alternative = 'greater'))
+print()
+
+print("Rank Sum: ICC > MFR & SDFR")
+print(ranksums(byMetric[4], byMetric[0], alternative = 'greater'))
+print()
+
+print("Rank Sum: ICC > CMFR & CSDFR")
+print(ranksums(byMetric[4], byMetric[1], alternative = 'greater'))
+print()
+
+print("Rank Sum: ICC > nRoA & Bias")
+print(ranksums(byMetric[4], byMetric[2], alternative = 'greater'))
+print()
+
+print("Rank Sum: ICC =/= CCC")
+print(ranksums(byMetric[3], byMetric[4]))
+print()
