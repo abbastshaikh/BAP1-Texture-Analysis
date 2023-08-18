@@ -102,7 +102,8 @@ for sigma in [0.5, 1, 2, 4, 8]:
     LoGImage = sitk.LaplacianRecursiveGaussian(image, sigma = sigma)
     
     plt.imshow(sitk.GetArrayFromImage(LoGImage), cmap = "gray")
-    plt.title("Laplacian of Gaussian, Sigma = " + str(sigma))
+    plt.title("Laplacian of Gaussian, Sigma = " + str(round(sigma * 0.75, 2)) + "mm")
+    plt.axis('off')
     plt.show()
 
 # Plotting images with Local Binary Pattern (LBP) filters
@@ -110,6 +111,7 @@ for radius in [1, 2, 4]:
     LBPImage = next(radiomics.imageoperations.getLBP2DImage(image, mask, lbp2DRadius = radius))[0]
     plt.imshow(sitk.GetArrayFromImage(LBPImage), cmap = "gray")
     plt.title("Local Binary Pattern, Radius = " + str(radius))
+    plt.axis('off')
     plt.show()
 
 # Plotting images with wavelet filters
@@ -123,6 +125,7 @@ for wavelet in ['haar', 'dmey', 'coif1', 'sym2', 'db2', 'bior1.1', 'rbio1.1']:
             waveletImage = next(waveletTransform)
             plt.imshow(sitk.GetArrayFromImage(waveletImage[0]), cmap = "gray")
             plt.title(wavelet + " " + waveletImage[1])
+            plt.axis('off')
             plt.show()
         except StopIteration:
             break
